@@ -28,10 +28,13 @@ void IMU::enterSleep() {
 
 void IMU::queryData() {
     Wire.beginTransmission(IC2_ADDRESS_IMU);
-    Wire.write(0x20);  // QUA_Data_w_LSB Register (The first one in the block)
+    Wire.write(0x1A);  // QUA_Data_w_LSB Register (The first one in the block)
     Wire.endTransmission();
-    Wire.requestFrom(IC2_ADDRESS_IMU, 14);
-    QW = Wire.read() | Wire.read() << 8;  // Read 16 bit value, lsb first
+    Wire.requestFrom(IC2_ADDRESS_IMU, 20);
+    RY = Wire.read() | Wire.read() << 8;  // Read 16 bit value, lsb first
+    RR = Wire.read() | Wire.read() << 8; 
+    RP = Wire.read() | Wire.read() << 8; 
+    QW = Wire.read() | Wire.read() << 8;
     QX = Wire.read() | Wire.read() << 8; 
     QY = Wire.read() | Wire.read() << 8; 
     QZ = Wire.read() | Wire.read() << 8; 

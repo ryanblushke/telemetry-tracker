@@ -77,7 +77,7 @@ float PressureSensor::queryData() {
 
     partial_data1 = (raw_temprature - PAR_T1);
     partial_data2 = (partial_data1 * PAR_T2);
-    float temp = partial_data2 + (partial_data1 * partial_data1) * PAR_T3;
+    temp = partial_data2 + (partial_data1 * partial_data1) * PAR_T3;
     
     partial_data1 = PAR_P6 * temp;
     partial_data2 = PAR_P7 * (temp * temp);
