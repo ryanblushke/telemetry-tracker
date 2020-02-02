@@ -1,0 +1,5 @@
+
+
+This is some of the navigation code from our rover. map_manager.py will download sat images over a specified area, and navigation_ui displays the map centered on the coords delivered by the rover.
+
+It was written without a .ui file, so the entire UI is defined right in the file.
