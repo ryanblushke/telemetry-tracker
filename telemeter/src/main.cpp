@@ -74,11 +74,23 @@ enum State idle_handler(void) {
 }
 
 enum State armed_handler(void) {
+  //TODO: Set to CONFIGMODE, do self test, set to AMG mode
+
   return ARMED;
 }
 
 enum State active_handler(void) {
-  return ACTIVE;
+  imu.queryData();
+  //TODO: Condition for exiting active state
+  //imu.AX && imu.AY && imu.AZ
+  if(FALSE) {
+    return LANDED;
+  }
+  else {
+    logLineOfDataToSDCard();
+    //TODO: Transmit Data
+    return ACTIVE;
+  }
 }
 
 enum State landed_handler(void) {
