@@ -21,9 +21,11 @@
 // #include <Adafruit_GPS.h>
 #include <TinyGPS++.h>
 
-const int chipSelect = 10; 
+#define DEBUG = 1;
+
+const int chipSelect = 10;
 SdFat sd;
-SdFile file;
+SdFile file;``
 
 
 IMU imu;
@@ -54,13 +56,47 @@ void fastBlink() {
     delay(200);
 }
 
+enum State {
+    SLEEP = 0,
+    IDLE = 1,
+    ARMED = 2,
+    ACTIVE = 3,
+    LANDED = 4,
+    DATA_TRANSFER = 5
+};
+
+enum State sleep_handler(void) {
+  return SLEEP;
+}
+
+enum State idle_handler(void) {
+  return IDLE;
+}
+
+enum State armed_handler(void) {
+  return ARMED;
+}
+
+enum State active_handler(void) {
+  return ACTIVE;
+}
+
+enum State landed_handler(void) {
+  return LANDED;
+}
+
+enum State data_transfer_handler(void) {
+  return DATA_TRANSFER;
+}
+
 void setup() {
+    enum State curr_state = IDLE;
     Serial.begin(115200);
     Wire.begin();
     imu.init();
     flash.init();
     pressureSensor.init();
-    
+
     // startTimer(10); // In Hz
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -86,7 +122,7 @@ void setup() {
     delay(300);
     Serial1.begin(38400);
     Serial1.println("$PMTK220,100*2F"); // Set update rate to 10HZ (Won't work at default baud)
-
+    if (DEBUG) Serial.println("initial state: %d", curr_state);
 }
 
 uint32_t smoothedADCValue = 0;
@@ -176,7 +212,7 @@ void logLineOfDataToSDCard() {
     file.print(",");
     file.print(gps.speed.mps());
     file.println("");
-    
+
     Serial.println(float(smoothedADCValue) / pow(2.0, 32.0) * 3.3, 8);
 
     // Serial.print(gps.satellites.value());
@@ -203,6 +239,31 @@ void logLineOfDataToSDCard() {
 uint32_t lastLogTime = 0;
 
 void loop() {
+    if (DEBUG) Serial.println("current state: %d", curr_state);
+
+    switch (curr_state) {
+        case SLEEP:
+            curr_state = sleep_handler();
+            break;
+        case IDLE:
+            curr_state = idle_handler();
+            break;
+        case ARMED:
+            curr_state = armed_handler();
+            break;
+        case ACTIVE:
+            curr_state = active_handler();
+            break;
+        case LANDED:
+            curr_state = landed_handler();
+            break;
+        case DATA_TRANSFER:
+            curr_state = data_transfer_handler();
+            break;
+        default:
+            Serial.println("ERROR: invalid state: %d", curr_state);
+    }
+
     if (millis() > (lastLogTime + 100)) {
         lastLogTime = millis();
         logLineOfDataToSDCard();
@@ -216,7 +277,6 @@ void loop() {
         gps.encode(c);
     }
 }
-
 
 // void setTimerFrequency(int frequencyHz) {
 //     int compareValue = (CPU_HZ / (TIMER_PRESCALER_DIV * frequencyHz)) - 1;
@@ -269,7 +329,7 @@ void loop() {
 //     // we toggle the LED.
 //     if (TC->INTFLAG.bit.MC0 == 1) {
 //         TC->INTFLAG.bit.MC0 = 1;
-        
+
 //         // toggle onboard LED so show its working
 //         digitalWrite(LED_PIN, isLEDOn);
 //         isLEDOn = !isLEDOn;
