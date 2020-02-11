@@ -1,3 +1,10 @@
+# Qt Creator user-specific project settings
+**/*.pro.user
+
+# Qt build dir
+**/build-*
+
+# JetBrains
 .idea
 
 # Byte-compiled / optimized / DLL files
