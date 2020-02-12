@@ -7,7 +7,7 @@
 const int slaveSelectPin = 10;
 
 
-bool radioinit(){
+bool radioinit(int byteLen){
   pinMode(slaveSelectPin, OUTPUT);
   SPI.begin();
   bool good = true;
@@ -20,25 +20,26 @@ bool radioinit(){
   good &= writemasked(0x0b, B00000000, B00100000);  // Disable Overcurrent protection
 
   good &= writemasked(0x1D, B01111000, B11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
-  
+
   good &= writemasked(0x1E, B11000100, B11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
 
   good &= writemasked(0x26, B00000100, B00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
-  
+
   good &= writemasked(0x0E, B00000000, B11111111);  //FIFOTxBaseAddress to 0x00
 
-  good &= writemasked(0x22, 7, 0xFF);  // Set payload length
+  good &= writemasked(0x22, byteLen, 0xFF);  // Set payload length
   return good;
 }
 
 
-void tx(byte data[7]){//send 7 bytes of data
+void tx(byte data[], int dataLen){
   bool good = true;
   writemasked(0x01, B00000010, B00000111);  // Set to FSTX Mode
   delay(3);
+  //TODO: Set fails safes for when good == FALSE
   //lcd.print(good);
   good &= writemasked(0x0D, B00000000, B11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
-  writeFIFO(data);//Write PayloadLength bytes to the FIFO (RegFifo)
+  writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
   good &= writemasked(0x01, B00000011, B00000111); //set mode to TX
   byte stat = 0;
   do {
@@ -69,10 +70,10 @@ byte readbyte(byte addr){  // Reads one byte at address
   return resp;
 }
 
-void writeFIFO(byte data[7]){  // writes data to FIFO register
+void writeFIFO(byte data[], int dataLen){  // writes data to FIFO register
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(B10000000);//send address, for writing
-  for (int i = 0; i < 7; i++){
+  for (int i = 0; i < dataLen; i++){
     SPI.transfer(data[i]); //send data
   }
   digitalWrite(slaveSelectPin, HIGH);//end transaction
@@ -86,7 +87,7 @@ void writeFIFO(byte data[7]){  // writes data to FIFO register
 
 def writeaddr(addr):  # puts address into write mode
 	return addr | (1 << 7)
-	
+
 def writemasked(addr, data, mask, ignoreerror=False):  # writes mask bits of data to address
 	global spi
 	resp = spi.xfer2([addr, 0x00])
@@ -100,11 +101,11 @@ def writemasked(addr, data, mask, ignoreerror=False):  # writes mask bits of dat
 		return False
 	else:
 		return True
-		
+
 def readbyte(addr):  # Reads one byte at address
 	data = spi.xfer2([addr, 0x00])
 	return data[1]
-	
+
 def readfifo(num):  # Read num of bytes from Fifo buffer
 	data = spi.xfer2([0x00] * (num+1))  # First byte sets address 0, rest are just zeros
 	return data[1:]  # remove first byte
@@ -142,7 +143,7 @@ def dataready():  # Return true when message is ready
 	# we now have a message with valid CRC
 	writemasked(0x12, 0xFF, 0xFF, ignoreerror=True)  # Clear the flags
 	return True
-	
+
 def recieve():  # Return 7 byte message
 	writemasked(0x0D, readbyte(0x10), 0xFF)  # Set SPI FIFO Address to location of last packet
 	# print("Start of packet", readbyte(0x10))
@@ -152,11 +153,11 @@ def recieve():  # Return 7 byte message
 	# print("Number of bytes recieved", readbyte(0x13))
 	# data = data[4:]  # Remove four byte header added by radiohead
 	return data
-	
+
 def rssi():
 	raw = readbyte(0x1A)
 	return -137 + raw
-	
+
 def snr():
 	raw = readbyte(0x19)
 	raw = raw & 0b01111111

@@ -5,8 +5,9 @@
 
 #define IC2_ADDRESS_IMU 0x28
 
-Void IMU::selfTest(){
+int16_t IMU::selfTest(){
     int16_t BM;
+    int16_t result;
     //Set to config mode
     Wire.beginTransmission(IC2_ADDRESS_IMU);
     Wire.write(0x3D); // OPR_MODE Register
@@ -28,7 +29,11 @@ Void IMU::selfTest(){
     //TODO: Check result register
     Wire.beginTransmission();
     Wire.write(0x36); // ST_RESULT Register
-    
+    Wire.endTransmission();
+    Wire.requestFrom(IC2_ADDRESS_IMU, 1);
+    result = Wire.read();
+    return result;
+
 }
 
 void IMU::init() {
