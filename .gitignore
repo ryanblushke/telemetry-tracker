@@ -1,3 +1,6 @@
+# Python virtual environments
+**/*venv*
+
 # Qt Creator user-specific project settings
 **/*.pro.user
 

@@ -13,7 +13,7 @@ Window {
 
     Plugin {
         id: mapboxglPlugin
-        name: "mapboxgl"
+        name: "osm"
     }
 
     Rectangle {
@@ -22,10 +22,8 @@ Window {
         Layout.alignment: Qt.AlignCenter
         color: "red"
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 0
-        anchors.top: parent.top
-        anchors.topMargin: 45
         anchors.left: parent.left
+        anchors.top: parent.top
         Layout.fillHeight: true
         Layout.fillWidth: true
         Layout.preferredWidth: 40
@@ -76,15 +74,25 @@ Window {
 
     ScrollView {
         id: scrollView
-        x: 824
-        y: 329
+        x: 554
+        y: 0
         width: 200
-        height: 200
+        height: 686
+
+        Column {
+            id: column
+            anchors.fill: parent
+            spacing: 2
+
+            Rectangle { color: "red"; width: 50; height: 50 }
+            Rectangle { color: "green"; width: 20; height: 50 }
+            Rectangle { color: "blue"; width: 50; height: 20 }
+        }
     }
 }
 
 /*##^##
 Designer {
-    D{i:2;anchors_height:675;anchors_width:548;anchors_x:0;anchors_y:0}
+    D{i:2;anchors_height:675;anchors_width:548;anchors_x:0;anchors_y:0}D{i:9;anchors_height:400;anchors_width:200}
 }
 ##^##*/
