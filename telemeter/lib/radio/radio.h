@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-const int slaveSelectPin = 10;
+const int slaveSelectPin = 8;
 
 class Radio {
 public:
-    bool radioinit(int byteLen);
+    bool TXradioinit(int byteLen);
     void tx(byte data[], int dataLen);
     bool writemasked(byte addr, byte data, byte mask);
     byte readbyte(byte addr);
