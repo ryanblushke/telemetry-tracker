@@ -3,36 +3,33 @@
 
 
 #include <SPI.h>
+#include "radio.h"
 
-const int slaveSelectPin = 10;
-
-
-bool radioinit(int byteLen){
+bool Radio::radioinit(int byteLen){
   pinMode(slaveSelectPin, OUTPUT);
   SPI.begin();
   bool good = true;
-  good &= writemasked(0x01, B00000000, B00000111);  // Set to sleep Mode
-  good &= writemasked(0x01, B10001000, B11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
-  good &= writemasked(0x01, B00000001, B00000111);  // Set to Standby Mode
+  good &= writemasked(0x01, 0b00000000, 0b00000111);  // Set to sleep Mode
+  good &= writemasked(0x01, 0b10001000, 0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
+  good &= writemasked(0x01, 0b00000001, 0b00000111);  // Set to Standby Mode
 
-  good &= writemasked(0x09, B10001111, B10001111);  // Set PA_BOOST, set OutputPower to 1111
-  good &= writemasked(0x4d, B00000111, B00000111);  // Enable High power output
-  good &= writemasked(0x0b, B00000000, B00100000);  // Disable Overcurrent protection
+  good &= writemasked(0x09, 0b10001111, 0b10001111);  // Set PA_BOOST, set OutputPower to 1111
+  good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output
+  good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
 
-  good &= writemasked(0x1D, B01111000, B11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
+  good &= writemasked(0x1D, 0b01111000, 0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
 
-  good &= writemasked(0x1E, B11000100, B11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
+  good &= writemasked(0x1E, 0b11000100, 0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
 
-  good &= writemasked(0x26, B00000100, B00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
+  good &= writemasked(0x26, 0b00000100, 0b00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
 
-  good &= writemasked(0x0E, B00000000, B11111111);  //FIFOTxBaseAddress to 0x00
+  good &= writemasked(0x0E, 0b00000000, 0b11111111);  //FIFOTxBaseAddress to 0x00
 
   good &= writemasked(0x22, byteLen, 0xFF);  // Set payload length
   return good;
 }
 
-
-void tx(byte data[], int dataLen){
+void Radio::tx(byte data[], int dataLen){
   bool good = true;
   writemasked(0x01, B00000010, B00000111);  // Set to FSTX Mode
   delay(3);
@@ -49,8 +46,7 @@ void tx(byte data[], int dataLen){
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
 
-
-bool writemasked(byte addr, byte data, byte mask){  // writes mask bits of data to address
+bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits of data to address
   byte readdata = readbyte(addr) & ~mask;
   byte writedata = data & mask;
   digitalWrite(slaveSelectPin, LOW); // Start new transaction
@@ -61,8 +57,7 @@ bool writemasked(byte addr, byte data, byte mask){  // writes mask bits of data 
   return resp == (readdata | writedata);
 }
 
-
-byte readbyte(byte addr){  // Reads one byte at address
+byte Radio::readbyte(byte addr){  // Reads one byte at address
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(addr);//send address, for reading
   byte resp = SPI.transfer(0x00);//transfer zeros, to read register
@@ -70,7 +65,7 @@ byte readbyte(byte addr){  // Reads one byte at address
   return resp;
 }
 
-void writeFIFO(byte data[], int dataLen){  // writes data to FIFO register
+void Radio::writeFIFO(byte data[], int dataLen){  // writes data to FIFO register
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(B10000000);//send address, for writing
   for (int i = 0; i < dataLen; i++){
@@ -85,7 +80,7 @@ void writeFIFO(byte data[], int dataLen){  // writes data to FIFO register
 // Here's the receiver code. It's written in python, but it's basically doing the same stuff
 
 
-def writeaddr(addr):  # puts address into write mode
+/*def writeaddr(addr):  # puts address into write mode
 	return addr | (1 << 7)
 
 def writemasked(addr, data, mask, ignoreerror=False):  # writes mask bits of data to address
@@ -162,3 +157,4 @@ def snr():
 	raw = readbyte(0x19)
 	raw = raw & 0b01111111
 	return raw / 4
+*/

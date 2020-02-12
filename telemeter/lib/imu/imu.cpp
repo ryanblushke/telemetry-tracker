@@ -27,7 +27,7 @@ int16_t IMU::selfTest(){
     Wire.endTransmission();
 
     //TODO: Check result register
-    Wire.beginTransmission();
+    Wire.beginTransmission(IC2_ADDRESS_IMU);
     Wire.write(0x36); // ST_RESULT Register
     Wire.endTransmission();
     Wire.requestFrom(IC2_ADDRESS_IMU, 1);
