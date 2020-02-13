@@ -68,17 +68,17 @@ void Radio::tx(byte data[], int dataLen){
   } while (B00001000 != (stat & B00001000));
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
-
-void Radio::rx(){  // Return 7 byte message
+// TODO: DEBUG THIS FUNCTION. I BELIEVE THERE WILL BE ISSUES HERE
+byte Radio::rx(){  // Return 7 byte message
 	writemasked(0x0D, readbyte(0x10), 0xFF)  // Set SPI FIFO Address to location of last packet
-  data[]
+  bye data[];
 	// print("Start of packet", readbyte(0x10))
 	// writemasked(0x0D, 0, 0xFF)  # Set SPI FIFO Address to start of FIFO
-	data = readfifo(7)
+	data = readfifo(7);
 	// print("End of last packet", readbyte(0x25))
 	// print("Number of bytes recieved", readbyte(0x13))
 	// data = data[4:]  # Remove four byte header added by radiohead
-	return data
+	return data;
 }
 
 bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits of data to address
@@ -109,58 +109,38 @@ void Radio::writeFIFO(byte data[], int dataLen){  // writes data to FIFO registe
   digitalWrite(slaveSelectPin, HIGH);//end transaction
 }
 
-/*byte Radio::readFIFO(int num){  // Read num of bytes from Fifo buffer
+byte Radio::readFIFO(int num){  // Read num of bytes from Fifo buffer
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(0b00000000); //send FIFO address, for reading
-  byte resp = SPI.transfer(0x00);//transfer zeros, to read register
+  for (int i = 0; i < num; i++){
+    byte resp[i] = SPI.transfer(0x00);//transfer zeros, to read register
+  }
   digitalWrite(slaveSelectPin, HIGH);//end transaction
+  return resp;
+}
 
-  byte data = spi.xfer2([0x00] * (num+1))  # First byte sets address 0, rest are just zeros
-	return data[1:]  # remove first byte
-}*/
+bool Radio::dataready(){  // Return true when message is ready
+	byte stat = readbyte(0x12);
+	if (0b01000000 != stat & 0b01000000){ // bit 6 is RxDone, wait until this is true
+    return false; // if bit not 1;
+  }
+	// print("Stat:", "{0:b}".format(stat))
+	if (0b00100000 == stat & 0b00100000){  // bit 5 is PayloadCrcError
+		writemasked(0x12, 0xFF, 0xFF)  // Clear the flags
+		return false;
+  }  // exit if bit 1
+	// we now have a message with valid CRC
+	writemasked(0x12, 0xFF, 0xFF)  // Clear the flags
+	return true;
+}
 
+byte Radio::rssi(){
+  byte raw = readbyte(0x1A);
+  return (-137 + raw);
+}
 
-
-// Here's the receiver code. It's written in python, but it's basically doing the same stuff
-
-
-/*def writeaddr(addr):  # puts address into write mode
-	return addr | (1 << 7)
-
-
-def readfifo(num):  # Read num of bytes from Fifo buffer
-	data = spi.xfer2([0x00] * (num+1))  # First byte sets address 0, rest are just zeros
-	return data[1:]  # remove first byte
-
-def dataready():  # Return true when message is ready
-	stat = readbyte(0x12)
-	if 0b01000000 != stat & 0b01000000:  # bit 6 is RxDone, wait until this is true
-		return False  # exit if bit not 1
-	# print("Stat:", "{0:b}".format(stat))
-	if 0b00100000 == stat & 0b00100000:  # bit 5 is PayloadCrcError
-		writemasked(0x12, 0xFF, 0xFF, ignoreerror=True)  # Clear the flags
-		print("E")
-		return False  # exit if bit 1
-	# we now have a message with valid CRC
-	writemasked(0x12, 0xFF, 0xFF, ignoreerror=True)  # Clear the flags
-	return True
-
-def recieve():  # Return 7 byte message
-	writemasked(0x0D, readbyte(0x10), 0xFF)  # Set SPI FIFO Address to location of last packet
-	# print("Start of packet", readbyte(0x10))
-	# writemasked(0x0D, 0, 0xFF)  # Set SPI FIFO Address to start of FIFO
-	data = readfifo(7)
-	# print("End of last packet", readbyte(0x25))
-	# print("Number of bytes recieved", readbyte(0x13))
-	# data = data[4:]  # Remove four byte header added by radiohead
-	return data
-
-def rssi():
-	raw = readbyte(0x1A)
-	return -137 + raw
-
-def snr():
-	raw = readbyte(0x19)
-	raw = raw & 0b01111111
-	return raw / 4
-*/
+byte Radio::snr(){
+	byte raw = readbyte(0x19);
+	raw = raw & 0b01111111;
+	return (raw / 4);
+}

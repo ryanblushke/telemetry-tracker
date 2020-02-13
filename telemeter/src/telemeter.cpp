@@ -3,8 +3,10 @@
 #include "telemeter.h"
 
 #define DEBUG true
+#define FLASH false
 
-const int chipSelect = 10;
+int counter = 0;
+const int chipSelect = 8;
 SdFat sd;
 SdFile file;
 TinyGPSPlus gps;
@@ -27,8 +29,12 @@ enum State {
     ARMED = 2,
     ACTIVE = 3,
     LANDED = 4,
-    DATA_TRANSFER = 5
+    DATA_TRANSFER = 5,
+    TEST = 6
 };
+
+enum State curr_state = ACTIVE;
+
 
 enum State sleep_handler(void) {
   return SLEEP;
@@ -48,14 +54,23 @@ enum State active_handler(void) {
   imu.queryData();
   //TODO: Condition for exiting active state
   //imu.AX && imu.AY && imu.AZ
-  if(false) {
-    return LANDED;
-  }
-  else {
-    logLineOfDataToSDCard();
+  if (DEBUG) Serial.print("Counter:");
+  if (DEBUG) Serial.println(counter);
+  if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20) && (imu.AZ > -20 && imu.AZ < 20)) {
+      counter++;
+      if (counter == 1000){
+        if (DEBUG) Serial.println("Switched state to LANDED");
+        counter = 0;
+        return LANDED;
+      }
+    }
+    else{
+      if (DEBUG) Serial.println("COUNTER RESET");
+      counter = 0;
+    }
+    //logLineOfDataToSDCard();
     //TODO: Transmit Data
     return ACTIVE;
-  }
 }
 
 enum State landed_handler(void) {
@@ -66,7 +81,36 @@ enum State data_transfer_handler(void) {
   return DATA_TRANSFER;
 }
 
-enum State curr_state = IDLE;
+enum State test_handler(void) {
+  imu.queryData();
+  delay(500);
+  Serial.print("AX: ");
+  Serial.println(imu.AX);
+  Serial.print("AY: ");
+  Serial.println(imu.AY);
+  Serial.print("AZ: ");
+  Serial.println(imu.AZ);
+  if (imu.AX > -15 && imu.AX < 15){
+    Serial.println("(imu.AX > -10 && imu.AX < 10) TRUE");
+  }
+  if (imu.AY > -15 && imu.AY < 15){
+    Serial.println("(imu.AY > -10 && imu.AY < 10) TRUE");
+  }
+  if (imu.AZ > -15 && imu.AZ < 15){
+    Serial.println("(imu.AX > -10 && imu.AX < 10) TRUE");
+  }
+  if ((imu.AX > -15 && imu.AX < 15) && (imu.AY > -15 && imu.AY < 15) && (imu.AZ > -15 && imu.AZ < 15)){
+    counter++;
+    Serial.print("Counter:");
+    Serial.println(counter);
+  }
+  else{
+    Serial.println("COUNTER RESET");
+    counter = 0;
+  }
+  return TEST;
+}
+
 
 void setup() {
     Serial.begin(115200);
@@ -90,9 +134,11 @@ void setup() {
     REG_ADC_AVGCTRL = 0x0A; // Accumulate 1024 samples per read
 
     Serial.println("Starting");
-    while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
-        Serial.println("initialization failed");
-        fastBlink();
+    if(FLASH){
+      while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+          Serial.println("initialization failed");
+          fastBlink();
+      }
     }
 
     Serial1.begin(9600); // GPS connection
@@ -238,13 +284,16 @@ void loop() {
         case DATA_TRANSFER:
             curr_state = data_transfer_handler();
             break;
+        case TEST:
+            curr_state = test_handler();
+            break;
         default:
             if (DEBUG) { Serial.print("Error - Invalid states: "); Serial.println(curr_state); }
     }
 
     if (millis() > (lastLogTime + 100)) {
         lastLogTime = millis();
-        logLineOfDataToSDCard();
+        if(FLASH) logLineOfDataToSDCard();
     }
     updateADCReading();
 
