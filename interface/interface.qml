@@ -64,6 +64,13 @@ Rectangle {
         x: 900
         y: 189
         text: qsTr("Button")
+
+        onClicked: gui.trigger()
+
+        Connections {
+            target: gui
+            onTrigger: console.log("The application data changed!")
+        }
     }
 
     Button {
