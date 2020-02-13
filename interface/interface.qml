@@ -1,19 +1,20 @@
 import QtQuick 2.14
 import QtQuick.Layouts 1.14
-import QtQuick.Window 2.14
 import QtPositioning 5.14
 import QtLocation 5.14
 import QtQuick.Controls 2.13
 
-Window {
+Rectangle {
     id: window
     width: 1024
     height: 720
     visible: true
 
+    signal clicked()
+
     Plugin {
         id: mapboxglPlugin
-        name: "osm"
+        name: "mapboxgl"
     }
 
     Rectangle {
@@ -70,6 +71,10 @@ Window {
         x: 900
         y: 235
         text: qsTr("Button")
+
+        onClicked: {
+            parent.clicked()
+        }
     }
 
     ScrollView {
