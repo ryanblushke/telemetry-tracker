@@ -45,6 +45,7 @@ Rectangle {
             }
 
             MapPolyline {
+                id: flightPath
                 line.width: 3
                 line.color: 'blue'
                 path: [
@@ -55,6 +56,11 @@ Rectangle {
                     { latitude: 52.12466, longitude: -106.65925 },
                     { latitude: 52.12477, longitude: -106.65915 }
                 ]
+
+                Connections {
+                    target: gui
+                    onNewCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
+                }
             }
         }
     }
@@ -63,48 +69,23 @@ Rectangle {
         id: stateButton1
         x: 900
         y: 189
-        text: qsTr("Button")
+        text: qsTr("State1")
 
-        onClicked: gui.trigger()
-
-        Connections {
-            target: gui
-            onTrigger: console.log("The application data changed!")
-        }
+        onClicked: gui.changeState(1)
     }
 
     Button {
         id: stateButton2
         x: 900
         y: 235
-        text: qsTr("Button")
+        text: qsTr("State2")
 
-        onClicked: {
-            parent.clicked()
-        }
-    }
-
-    ScrollView {
-        id: scrollView
-        x: 554
-        y: 0
-        width: 200
-        height: 686
-
-        Column {
-            id: column
-            anchors.fill: parent
-            spacing: 2
-
-            Rectangle { color: "red"; width: 50; height: 50 }
-            Rectangle { color: "green"; width: 20; height: 50 }
-            Rectangle { color: "blue"; width: 50; height: 20 }
-        }
+        onClicked: gui.changeState(2)
     }
 }
 
 /*##^##
 Designer {
-    D{i:2;anchors_height:675;anchors_width:548;anchors_x:0;anchors_y:0}D{i:9;anchors_height:400;anchors_width:200}
+    D{i:2;anchors_height:675;anchors_width:548;anchors_x:0;anchors_y:0}
 }
 ##^##*/
