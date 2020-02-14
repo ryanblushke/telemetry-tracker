@@ -16,6 +16,7 @@
 #include "imu.h"
 #include "pressure.h"
 #include "flash.h"
+#include "radio.h"
 
 void logLineOfDataToSDCard();
 

@@ -2,6 +2,9 @@
 #define RADIO_H
 
 #include <stdint.h>
+#include <stdio.h>
+#include <SPI.h>
+
 
 const int slaveSelectPin = 8;
 

@@ -15,6 +15,7 @@ TinyGPSPlus gps;
 IMU imu;
 PressureSensor pressureSensor;
 Flash flash;
+Radio radio;
 
 void fastBlink() {
     digitalWrite(LED_BUILTIN, HIGH);
@@ -33,7 +34,7 @@ enum State {
     TEST = 6
 };
 
-enum State curr_state = ACTIVE;
+enum State curr_state = TEST;
 
 
 enum State sleep_handler(void) {
@@ -46,8 +47,13 @@ enum State idle_handler(void) {
 
 enum State armed_handler(void) {
   //TODO: Set to CONFIGMODE, do self test, set to AMG mode
-
-  return ARMED;
+  imu.queryData();
+  if ((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20) || (imu.AZ < -20 || imu.AZ > 20)) {
+    return ACTIVE;
+  }
+  else{
+    return ARMED;
+  }
 }
 
 enum State active_handler(void) {
@@ -82,32 +88,9 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
-  imu.queryData();
-  delay(500);
-  Serial.print("AX: ");
-  Serial.println(imu.AX);
-  Serial.print("AY: ");
-  Serial.println(imu.AY);
-  Serial.print("AZ: ");
-  Serial.println(imu.AZ);
-  if (imu.AX > -15 && imu.AX < 15){
-    Serial.println("(imu.AX > -10 && imu.AX < 10) TRUE");
-  }
-  if (imu.AY > -15 && imu.AY < 15){
-    Serial.println("(imu.AY > -10 && imu.AY < 10) TRUE");
-  }
-  if (imu.AZ > -15 && imu.AZ < 15){
-    Serial.println("(imu.AX > -10 && imu.AX < 10) TRUE");
-  }
-  if ((imu.AX > -15 && imu.AX < 15) && (imu.AY > -15 && imu.AY < 15) && (imu.AZ > -15 && imu.AZ < 15)){
-    counter++;
-    Serial.print("Counter:");
-    Serial.println(counter);
-  }
-  else{
-    Serial.println("COUNTER RESET");
-    counter = 0;
-  }
+  byte data[1] = {0xFF};
+  radio.tx(data, 1);
+  delay(300);
   return TEST;
 }
 
@@ -118,6 +101,7 @@ void setup() {
     imu.init();
     flash.init();
     pressureSensor.init();
+    radio.TXradioinit(8);
 
     // startTimer(10); // In Hz
     pinMode(LED_BUILTIN, OUTPUT);
