@@ -13,11 +13,11 @@ public:
     bool TXradioinit(int byteLen);
     bool RXradioinit();
     void tx(byte data[], int dataLen);
-    byte rx();
+    void rx(byte buffer[], byte len);
     bool writemasked(byte addr, byte data, byte mask);
     byte readbyte(byte addr);
     void writeFIFO(byte data[], int dataLen);
-    byte readFIFO(int num);
+    void readFIFO(byte buffer[], byte num);
     byte rssi();
     byte snr();
     bool dataready();

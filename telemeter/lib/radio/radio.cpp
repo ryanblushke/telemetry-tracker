@@ -81,16 +81,14 @@ void Radio::tx(byte data[], int dataLen){
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
 // TODO: DEBUG THIS FUNCTION. I BELIEVE THERE WILL BE ISSUES HERE
-byte Radio::rx(){  // Return 7 byte message
+void Radio::rx(byte buffer[], byte len){  // Return 7 byte message
 	writemasked(0x0D, readbyte(0x10), 0xFF);  // Set SPI FIFO Address to location of last packet
-  byte data[7];
 	// print("Start of packet", readbyte(0x10))
 	// writemasked(0x0D, 0, 0xFF)  # Set SPI FIFO Address to start of FIFO
-	*data = readFIFO(7);
+	readFIFO(buffer, len);
 	// print("End of last packet", readbyte(0x25))
 	// print("Number of bytes recieved", readbyte(0x13))
 	// data = data[4:]  # Remove four byte header added by radiohead
-	return *data;
 }
 
 byte Radio::readbyte(byte addr){  // Reads one byte at address
@@ -110,15 +108,13 @@ void Radio::writeFIFO(byte data[], int dataLen){  // writes data to FIFO registe
   digitalWrite(slaveSelectPin, HIGH);//end transaction
 }
 
-byte Radio::readFIFO(int num){  // Read num of bytes from Fifo buffer
-  byte resp[num];
+void Radio::readFIFO(byte buffer[], byte num){  // Read num of bytes from Fifo buffer
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(0b00000000); //send FIFO address, for reading
   for (int i = 0; i < num; i++){
-    resp[i] = SPI.transfer(0x00);//transfer zeros, to read register
+    buffer[i] = SPI.transfer(0x00);//transfer zeros, to read register
   }
   digitalWrite(slaveSelectPin, HIGH);//end transaction
-  return *resp;
 }
 
 bool Radio::dataready(){  // Return true when message is ready
