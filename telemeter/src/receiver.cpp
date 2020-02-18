@@ -17,7 +17,6 @@ void fastBlink() {
 
 void setup() {
     Serial.begin(115200);
-    radio.RXradioinit();
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -26,17 +25,23 @@ void setup() {
 
 
     Serial.println("Starting");
+    radio.RXradioinit();
+    Serial.println("Starting");
 
 }
 
 
 void loop() {
     if (radio.dataready()){
-        byte buffer[255];
-        radio.rx(buffer, 255);
+        byte buffer[256];
+        radio.rx(buffer, 256);
         for (int i = 0; i < 256; i++){
             Serial.print(buffer[i], HEX);
         }
         Serial.println();
+        Serial.print("RSSI: ");
+        Serial.println(radio.rssi());
+        Serial.print("SNR: ");
+        Serial.println(radio.snr());
     }
 }

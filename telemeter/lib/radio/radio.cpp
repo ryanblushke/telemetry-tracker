@@ -17,6 +17,7 @@ bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits o
 
 bool Radio::TXradioinit(int bitLen){
   pinMode(slaveSelectPin, OUTPUT);
+  
   SPI.begin();
   bool good = true;
   good &= writemasked(0x01, 0b00000000, 0b00000111);  // Set to sleep Mode
@@ -27,6 +28,7 @@ bool Radio::TXradioinit(int bitLen){
   good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output
   good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
 
+	// good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
   good &= writemasked(0x1D, 0b01111000, 0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
 
   good &= writemasked(0x1E, 0b11000100, 0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
@@ -41,6 +43,7 @@ bool Radio::TXradioinit(int bitLen){
 
 bool Radio::RXradioinit(){
   pinMode(slaveSelectPin, OUTPUT);
+  SPI.begin();
   bool good = true;
 	//good &= writemasked(0x01, 0x00, 0x07);  // Set to sleep Mode
 	good &= writemasked(0x01, 0b10001000, 0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
@@ -49,8 +52,10 @@ bool Radio::RXradioinit(){
 	good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output mode
 	good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
 	good &= writemasked(0x1D, 0b01111000, 0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
+  // good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
+
 	// writemasked(0x1D, 0b01111001, 0b11111111)  # ModemConfig1 - Bw=125khz, CR=4/8, inp header
-	good &= writemasked(0x1E, 0b11000000, 0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
+	good &= writemasked(0x1E, 0b11000000, 0b11111111);  // ModemConfig2 - Sf=4096,  , CRC on, TimeoutMSB=0
 	// writemasked(0x1E, 0b11000100, 0b11111111)  # ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
   // writemasked(0x1E, 0b10000100, 0b11111111)  # ModemConfig2 - Sf=256, single packet, CRC on, TimeoutMSB=0
 	// writemasked(0x26, 0b00001100, 0b00001100)  # ModemConfig3 - set AGC on, Lowdatarateoptimise on
@@ -58,7 +63,7 @@ bool Radio::RXradioinit(){
 	// LDR optimise needs to be off, or it fails to send messages longer then ~4 bytes, despite the datasheet
 	good &= writemasked(0x26, 0x00, 0xFF);  // Lora data pointer
 	good &= writemasked(0x0F, 0x00, 0xFF);  // Set RxBase Address
-	// writemasked(0x22, 9, 0xFF)  # Set payload length - don't need this, unless using implicit header
+	// writemasked(0x22, 6, 0xFF);  // Set payload length - don't need this, unless using implicit header
   return good;
 }
 
@@ -71,12 +76,15 @@ void Radio::tx(byte data[], int dataLen){
   Serial.println(data[0]);
   good &= writemasked(0x0D, 0b00000000, 0b11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
   writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
+  Serial.println("1");
   good &= writemasked(0x01, 0b00000011, 0b00000111); //set mode to TX
   byte stat = 0;
+  uint32_t ts = millis();
   do {
     stat = readbyte(0x12);
     // bit 3 is TxDone, wait until this is true
   } while (0b00001000 != (stat & 0b00001000));
+  Serial.println(millis() - ts);
   Serial.println("Trasmission Done.");
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
@@ -125,6 +133,7 @@ bool Radio::dataready(){  // Return true when message is ready
 	// print("Stat:", "{0:b}".format(stat))
 	if (0b00100000 == (stat & 0b00100000)){  // bit 5 is PayloadCrcError
 		writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
+    Serial.println("Error!");
 		return false;
   }  // exit if bit 1
 	// we now have a message with valid CRC
@@ -132,13 +141,13 @@ bool Radio::dataready(){  // Return true when message is ready
 	return true;
 }
 
-byte Radio::rssi(){
+int Radio::rssi(){
   byte raw = readbyte(0x1A);
   return (-137 + raw);
 }
 
-byte Radio::snr(){
+float Radio::snr(){
 	byte raw = readbyte(0x19);
 	raw = raw & 0b01111111;
-	return (raw / 4);
+	return (raw / 4.0);
 }

@@ -18,8 +18,8 @@ public:
     byte readbyte(byte addr);
     void writeFIFO(byte data[], int dataLen);
     void readFIFO(byte buffer[], byte num);
-    byte rssi();
-    byte snr();
+    int rssi();
+    float snr();
     bool dataready();
 };
 

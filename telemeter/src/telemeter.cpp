@@ -88,8 +88,10 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
-  byte data[1] = {0xFF};
-  radio.tx(data, 1);
+  byte data[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  Serial.println("Starting send");
+  radio.tx(data, 2);
+  Serial.println("Done send");
   delay(300);
   return TEST;
 }
@@ -101,14 +103,11 @@ void setup() {
     imu.init();
     flash.init();
     pressureSensor.init();
-    radio.TXradioinit(8);
+    radio.TXradioinit(6);
 
     // startTimer(10); // In Hz
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
-
-    pinMode(8, OUTPUT); // Disable RFM96 radio SPI interface
-    digitalWrite(8, HIGH);
 
     // while (!Serial) {;} // Wait for serial channel to open
 
