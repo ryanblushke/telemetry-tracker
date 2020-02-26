@@ -24,16 +24,15 @@ void setup() {
     Serial.println("Test");
     while (!Serial) {;} // Wait for serial channel to open
 
-
     Serial.println("Starting");
     radio.RXradioinit();
-    Serial.println("Starting");
-
 }
 
 
 void loop() {
-    Serial.println("In Loop");
+    String msg = Serial.readString();
+    Serial.println("ACK: " + msg);
+
     if (radio.dataready()){
         byte buffer[255];
         radio.rx(buffer, 255);

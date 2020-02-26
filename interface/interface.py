@@ -24,7 +24,7 @@ class Receiver:
 
     def __init__(self):
         self.receiver_id = 0
-        self.ser = serial.Serial('/dev/ttyACM0')
+        self.ser = serial.Serial('/dev/cu.usbmodem14201')
         print(self.ser.name)
         self.ser.write(b'hello')
 
@@ -34,7 +34,7 @@ class Receiver:
 
     def set_state(self, state):
         self.receiver_id = 1
-        print("State: " + str(state))
+        print("Receiver State: " + str(state))
 
     def send_msg(self, msg):
         self.ser.write(msg.encode())
