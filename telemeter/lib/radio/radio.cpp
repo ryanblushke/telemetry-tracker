@@ -17,7 +17,7 @@ bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits o
 
 bool Radio::TXradioinit(int bitLen){
   pinMode(slaveSelectPin, OUTPUT);
-  
+
   SPI.begin();
   bool good = true;
   good &= writemasked(0x01, 0b00000000, 0b00000111);  // Set to sleep Mode
@@ -73,10 +73,13 @@ void Radio::tx(byte data[], int dataLen){
   delay(3);
   //TODO: Set fails safes for when good == FALSE
   //lcd.print(good);
-  Serial.println(data[0]);
+  for(int i = 0; i < dataLen; i++) {
+    Serial.print(data[i]);
+    Serial.print(", ");
+  }
+  Serial.println("");
   good &= writemasked(0x0D, 0b00000000, 0b11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
   writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
-  Serial.println("1");
   good &= writemasked(0x01, 0b00000011, 0b00000111); //set mode to TX
   byte stat = 0;
   uint32_t ts = millis();

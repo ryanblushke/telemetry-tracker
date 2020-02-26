@@ -21,6 +21,7 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
+    Serial.println("Test");
     while (!Serial) {;} // Wait for serial channel to open
 
 
@@ -32,10 +33,11 @@ void setup() {
 
 
 void loop() {
+    Serial.println("In Loop");
     if (radio.dataready()){
-        byte buffer[256];
-        radio.rx(buffer, 256);
-        for (int i = 0; i < 256; i++){
+        byte buffer[255];
+        radio.rx(buffer, 255);
+        for (int i = 0; i < 255; i++){
             Serial.print(buffer[i], HEX);
         }
         Serial.println();
