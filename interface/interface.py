@@ -2,6 +2,7 @@ from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQuick import QQuickView
 from enum import Enum
+import serial
 
 
 class State(Enum):
@@ -18,9 +19,14 @@ class Receiver:
 
     Attributes:
         receiver_id: The integer identifier of the receiver.
+        ser: Serial port used for communicating with receiver.
     """
 
-    receiver_id = 0
+    def __init__(self):
+        self.receiver_id = 0
+        self.ser = serial.Serial('/dev/ttyACM0')
+        print(self.ser.name)
+        self.ser.write(b'hello')
 
     def query_state(self):
         self.receiver_id = 1
@@ -29,6 +35,12 @@ class Receiver:
     def set_state(self, state):
         self.receiver_id = 1
         print("State: " + str(state))
+
+    def send_msg(self, msg):
+        self.ser.write(msg.encode())
+
+    def recv_msg(self):
+        return self.ser.readline()
 
 
 class Gui(QObject):
@@ -44,6 +56,7 @@ class Gui(QObject):
     def set_state(self, state):
         print("set state to: " + str(state))
         self.receiver.set_state(state)
+        self.receiver.send_msg("I'm talking to you.\n")
 
     def signal_new_coordinate(self, lat, long):
         print("new coordinate is: " + str(lat), ", ", str(long))
