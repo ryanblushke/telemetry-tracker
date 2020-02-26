@@ -52,6 +52,7 @@ enum State idle_handler(void) {
         Serial.println(incomingByte);
       }
       if(incomingByte == "Armed") {
+        //TODO: Send on serial the state of armed.
         return ARMED;
       }
     }
