@@ -17,6 +17,7 @@ void fastBlink() {
 
 void setup() {
     Serial.begin(115200);
+    radio.RXradioinit();
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -25,7 +26,6 @@ void setup() {
     while (!Serial) {;} // Wait for serial channel to open
 
     Serial.println("Starting");
-    radio.RXradioinit();
 }
 
 

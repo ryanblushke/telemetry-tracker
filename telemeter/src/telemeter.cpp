@@ -45,7 +45,7 @@ enum State idle_handler(void) {
   // send data only when you receive data:
   if (Serial.available() > 0) {
     // read the incoming byte:
-    incomingByte = Serial.read();
+    /*incomingByte = Serial.read();
     if(incomingByte != -1) {
       if(DEBUG) {
         Serial.print("Recieved: ");
@@ -55,7 +55,7 @@ enum State idle_handler(void) {
         //TODO: Send on serial the state of armed.
         return ARMED;
       }
-    }
+    }*/
   }
   return IDLE;
 }
@@ -103,12 +103,9 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
-  byte data[255];
-  for(int i = 0; i < 255; i++) {
-    data[i] = 0xFF;
-  }
+  byte data[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   Serial.println("Starting send");
-  radio.tx(data, 255);
+  radio.tx(data, 6);
   Serial.println("Done send");
   delay(300);
   return TEST;
