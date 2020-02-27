@@ -21,6 +21,12 @@ Rectangle {
             name: "osm.mapping.offline.directory"
             value: ":/offline_tiles/"
         }
+
+        PluginParameter {
+            id: highDPI
+            name: "osm.mapping.highdpi_tiles"
+            value: true
+        }
     }
 
     Rectangle {

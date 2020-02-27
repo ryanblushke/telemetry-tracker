@@ -24,7 +24,7 @@ class Receiver:
 
     def __init__(self):
         self.receiver_id = 0
-        self.ser = serial.Serial('/dev/cu.usbmodem14201')
+        self.ser = serial.Serial('/dev/cu.usbmodem14101')
         print(self.ser.name)
         self.ser.write(b'hello')
 
@@ -67,9 +67,9 @@ app = QGuiApplication([])
 view = QQuickView()
 view.setWidth(1024)
 view.setHeight(720)
-view.setTitle('Hello PyQt')
+view.setTitle('Telemetry Tracker')
 view.setResizeMode(QQuickView.SizeRootObjectToView)
-url = QUrl("interface.qml")
+url = QUrl('interface.qml')
 gui = Gui()
 gui.connect_signals()
 view.rootContext().setContextProperty('gui', gui)
