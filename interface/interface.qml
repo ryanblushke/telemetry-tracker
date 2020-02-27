@@ -13,8 +13,14 @@ Rectangle {
     signal clicked()
 
     Plugin {
-        id: mapboxglPlugin
-        name: "mapboxgl"
+        id: mapplugin
+        name: "osm"
+
+        PluginParameter {
+            id: offlineLocation
+            name: "osm.mapping.offline.directory"
+            value: ":/offline_tiles/"
+        }
     }
 
     Rectangle {
@@ -33,11 +39,12 @@ Rectangle {
         Map {
             id: map
             anchors.fill: parent
-            plugin: mapboxglPlugin
+            plugin: mapplugin
             center: QtPositioning.coordinate(52.12474, -106.65953) // Saskatoon
             zoomLevel: 19
 
             MapCircle {
+                id: currentLocation
                 center: QtPositioning.coordinate(52.12474, -106.65953)
                 radius: 2.0
                 color: 'red'
