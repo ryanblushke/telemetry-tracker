@@ -17,9 +17,14 @@ Rectangle {
         name: "osm"
 
         PluginParameter {
-            id: offlineLocation
+            name: 'osm.mapping.providersrepository.disabled'
+            value: true
+        }
+
+        PluginParameter {
+            id: offlineDirectory
             name: "osm.mapping.offline.directory"
-            value: ":/offline_tiles/"
+            value: "/Users/ryanblushke/telemetry-tracker-capstone/interface/offline_tiles/"
         }
 
         PluginParameter {
@@ -48,6 +53,7 @@ Rectangle {
             plugin: mapplugin
             center: QtPositioning.coordinate(52.12474, -106.65953) // Saskatoon
             zoomLevel: 19
+            activeMapType: map.supportedMapTypes[1]
 
             MapCircle {
                 id: currentLocation
