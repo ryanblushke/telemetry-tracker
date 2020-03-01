@@ -63,10 +63,10 @@ enum State idle_handler(void) {
 enum State armed_handler(void) {
   //TODO: Set to CONFIGMODE, do self test, set to AMG mode
   imu.queryData();
-  if ((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20) || (imu.AZ < -20 || imu.AZ > 20)) {
+  if ((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
+      || (imu.AZ < -20 || imu.AZ > 20)) {
     return ACTIVE;
-  }
-  else{
+  } else {
     return ARMED;
   }
 }
@@ -77,15 +77,15 @@ enum State active_handler(void) {
   //imu.AX && imu.AY && imu.AZ
   if (DEBUG) Serial.print("Counter:");
   if (DEBUG) Serial.println(counter);
-  if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20) && (imu.AZ > -20 && imu.AZ < 20)) {
+  if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
+      && (imu.AZ > -20 && imu.AZ < 20)) {
     counter++;
-    if (counter == 1000){
+    if (counter == 1000) {
       if (DEBUG) Serial.println("Switched state to LANDED");
       counter = 0;
       return LANDED;
     }
-  }
-  else{
+  } else {
     if (DEBUG) Serial.println("COUNTER RESET");
     counter = 0;
   }
@@ -132,7 +132,7 @@ void setup() {
   REG_ADC_AVGCTRL = 0x0A; // Accumulate 1024 samples per read
 
   Serial.println("Starting");
-  if(FLASH){
+  if (FLASH) {
     while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
       Serial.println("initialization failed");
       fastBlink();
@@ -144,11 +144,15 @@ void setup() {
   delay(300);
   Serial1.begin(38400);
   Serial1.println("$PMTK220,100*2F"); // Set update rate to 10HZ (Won't work at default baud)
-  if (DEBUG) { Serial.print("initial state: "); Serial.println(curr_state); }
+  if (DEBUG) {
+    Serial.print("initial state: ");
+    Serial.println(curr_state);
+  }
 }
 
 uint32_t smoothedADCValue = 0;
-float alpha = 0.01; // More alpha = faster response (1.0 = no smoothing, 0.001 = lots)
+float alpha =
+  0.01; // More alpha = faster response (1.0 = no smoothing, 0.001 = lots)
 // bool first = true;
 
 void updateADCReading() {
@@ -245,7 +249,7 @@ void logLineOfDataToSDCard() {
   // Serial.print(",");
   // Serial.println(gps.location.lat(), 7);
 
-  if (gps.location.age() > 100){
+  if (gps.location.age() > 100) {
     digitalWrite(LED_BUILTIN, HIGH);
     delay(10);
     digitalWrite(LED_BUILTIN, LOW);
@@ -261,37 +265,43 @@ void logLineOfDataToSDCard() {
 uint32_t lastLogTime = 0;
 
 void loop() {
-  if (DEBUG) { Serial.print("Current state: "); Serial.println(curr_state); }
+  if (DEBUG) {
+    Serial.print("Current state: ");
+    Serial.println(curr_state);
+  }
 
   switch (curr_state) {
-    case SLEEP:
+  case SLEEP:
     curr_state = sleep_handler();
     break;
-    case IDLE:
+  case IDLE:
     curr_state = idle_handler();
     break;
-    case ARMED:
+  case ARMED:
     curr_state = armed_handler();
     break;
-    case ACTIVE:
+  case ACTIVE:
     curr_state = active_handler();
     break;
-    case LANDED:
+  case LANDED:
     curr_state = landed_handler();
     break;
-    case DATA_TRANSFER:
+  case DATA_TRANSFER:
     curr_state = data_transfer_handler();
     break;
-    case TEST:
+  case TEST:
     curr_state = test_handler();
     break;
-    default:
-    if (DEBUG) { Serial.print("Error - Invalid states: "); Serial.println(curr_state); }
+  default:
+    if (DEBUG) {
+      Serial.print("Error - Invalid states: ");
+      Serial.println(curr_state);
+    }
   }
 
   if (millis() > (lastLogTime + 100)) {
     lastLogTime = millis();
-    if(FLASH) logLineOfDataToSDCard();
+    if (FLASH) logLineOfDataToSDCard();
   }
   updateADCReading();
 
