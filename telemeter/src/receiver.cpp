@@ -33,9 +33,9 @@ void loop() {
   Serial.println("ACK: " + msg);
 
   if (radio.dataready()) {
-    byte buffer[255];
-    radio.rx(buffer, 255);
-    for (int i = 0; i < 255; i++) {
+    byte buffer[6];
+    radio.rx(buffer, 6);
+    for (int i = 0; i < 6; i++) {
       Serial.print(buffer[i], HEX);
     }
     Serial.println();

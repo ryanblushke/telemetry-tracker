@@ -103,6 +103,44 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
+  // Serial.print("Satellite Value:");
+  // Serial.println(gps.satellites.value());
+  // Serial.print("hdop:");
+  // Serial.println(gps.hdop.hdop(), 1);
+  // Serial.print("location age:");
+  // Serial.println(gps.location.age());
+  // Serial.print("location lat:");
+  // Serial.println(gps.location.lat(), 7);
+  // Serial.print("location lng:");
+  // Serial.println(gps.location.lng(), 8);
+  // Serial.print("altitude:");
+  // Serial.println(gps.altitude.meters(), 2);
+  // Serial.print("time hour:");
+  // Serial.println(gps.time.hour());
+  // Serial.print("time min:");
+  // Serial.println(gps.time.minute());
+  // Serial.print("time sec:");
+  // Serial.println(gps.time.second());
+  // Serial.print("course deg:");
+  // Serial.println(gps.course.deg(), 2);
+  // Serial.print("speed:");
+  // Serial.println(gps.speed.mps());
+
+  double lat = 52.14383333333333;
+  Serial.print("Latitude: ");
+  Serial.println(lat);
+  int lat_int = lat * 10000000000000000;
+  Serial.print("Int Latitude: ");
+  Serial.println(lat_int, BIN);
+  uint8_t MSB_lat = (lat_int & 0xFF00) >> 8;
+  uint8_t LSB_lat = lat_int & 0x00FF;
+  Serial.print("MSB_lat: ");
+  Serial.println(MSB_lat, BIN);
+  Serial.print("LSB_lat: ");
+  Serial.println(LSB_lat, BIN);
+
+  // Serial.print("Lattitude: ");
+  // Serial.println(latsend, HEX);
   byte data[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   Serial.println("Starting send");
   radio.tx(data, 6);
