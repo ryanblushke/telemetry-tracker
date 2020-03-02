@@ -1,7 +1,6 @@
 // Main file for receiver build
 
 #include "receiver.h"
-#include "radio.h"
 
 #define DEBUG true
 
