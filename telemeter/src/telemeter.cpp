@@ -129,7 +129,7 @@ enum State test_handler(void) {
   double lat = 52.14383333333333;
   Serial.print("Latitude: ");
   Serial.println(lat);
-  int lat_int = lat * 10000000000000000;
+  int lat_int = lat * 10000000000000000; // 5214383333333333
   Serial.print("Int Latitude: ");
   Serial.println(lat_int, BIN);
   uint8_t MSB_lat = (lat_int & 0xFF00) >> 8;
