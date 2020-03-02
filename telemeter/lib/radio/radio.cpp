@@ -74,7 +74,7 @@ void Radio::tx(byte data[], int dataLen){
   //TODO: Set fails safes for when good == FALSE
   //lcd.print(good);
   for(int i = 0; i < dataLen; i++) {
-    Serial.print(data[i]);
+    Serial.print(data[i], HEX);
     Serial.print(", ");
   }
   Serial.println("");

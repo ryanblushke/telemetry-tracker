@@ -5,6 +5,14 @@
 #define DEBUG true
 #define FLASH false
 
+byte data[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t altitude_msb = 0;
+uint8_t altitude_lsb = 0;
+uint16_t altitude = 0;
+int16_t GPS_lat_rel = 0;
+int16_t GPS_lng_rel = 0;
+double GPS_lat_abs = 0;
+double GPS_lng_abs = 0;
 int counter = 0;
 const int chipSelect = 8;
 SdFat sd;
@@ -22,6 +30,78 @@ void fastBlink() {
   delay(200);
   digitalWrite(LED_BUILTIN, LOW);
   delay(200);
+}
+
+void get_location(){
+  altitude = gps.altitude.meters();
+  altitude_msb = altitude % 0xFF;
+  altitude_lsb = (altitude >> 8) % 0xFF;
+  GPS_lat_rel = (GPS_lat_abs - gps.location.lat()) * 100000;
+  GPS_lng_rel = (GPS_lng_abs - gps.location.lng()) * 100000;
+  if (DEBUG) {
+    Serial.print("Alititude: ");
+    Serial.println(altitude);
+    Serial.print("GPS_lng_rel: ");
+    Serial.println(GPS_lng_rel);
+    Serial.print("GPS_lat_rel: ");
+    Serial.println(GPS_lat_rel);
+  }
+}
+
+
+void set_payload(){
+  uint8_t GPS_lat_rel_top;
+  uint8_t GPS_lat_rel_bot;
+  uint8_t GPS_lng_rel_top;
+  uint8_t GPS_lng_rel_bot;
+  if(GPS_lat_rel < 0){
+    if(DEBUG) Serial.print("In set_payload: GPS_lat_rel: ");
+    if(DEBUG) Serial.println(GPS_lat_rel);
+    GPS_lat_rel = GPS_lat_rel * -1;
+    if(DEBUG) Serial.println(GPS_lat_rel);
+    if(DEBUG) Serial.println(GPS_lat_rel, HEX);
+    GPS_lat_rel_top = (GPS_lat_rel & 0x0780) >> 7;
+    GPS_lat_rel_bot = (GPS_lat_rel & 0x00FF);
+    if(DEBUG) Serial.println(GPS_lat_rel_top, BIN);
+    if(DEBUG) Serial.println(GPS_lat_rel_bot, BIN);
+    data[0] &= 0xE0;
+    data[0] |= GPS_lat_rel_top;
+    data[0] |= 0x10;
+    data[1] = GPS_lat_rel_bot;
+    if(DEBUG) Serial.println(data[0], HEX);
+  }
+  else{
+    GPS_lat_rel_top = (GPS_lat_rel & 0x0780) >> 7;
+    GPS_lat_rel_bot = (GPS_lat_rel & 0x00FF);
+    data[0] &= 0xE0;
+    data[0] |= GPS_lat_rel_top;
+    data[0] &= ~0x10;
+    data[1] = GPS_lat_rel_bot;
+  }
+  if(GPS_lng_rel < 0){
+    GPS_lng_rel = GPS_lng_rel * -1;
+    if(DEBUG) Serial.println(GPS_lng_rel);
+    if(DEBUG) Serial.println(GPS_lng_rel, HEX);
+    GPS_lng_rel_top = (GPS_lng_rel & 0x07F0) >> 4;
+    GPS_lng_rel_bot = (GPS_lng_rel & 0x000F);
+    if(DEBUG) Serial.println(GPS_lng_rel_top, BIN);
+    if(DEBUG) Serial.println(GPS_lng_rel_bot, BIN);
+    data[2] = GPS_lng_rel_top;
+    data[2] |= 0x80;
+    data[3] = GPS_lng_rel_bot;
+    if(DEBUG) Serial.println(data[2], HEX);
+    if(DEBUG) Serial.println(data[3], HEX);
+  }
+  else{
+    GPS_lng_rel_top = (GPS_lng_rel & 0x07F0) >> 4;
+    GPS_lng_rel_bot = (GPS_lng_rel & 0x000F);
+    data[2] = GPS_lng_rel_top;
+    data[2] &= ~0x80;
+    data[3] = GPS_lng_rel_bot;
+  }
+  //TODO: Set first 4 bits of altitude in data[3] last 12 in data[4]+[5]
+  //data[3] = altitude_msb;
+  //data[4] = altitude_lsb;
 }
 
 enum State {
@@ -61,7 +141,9 @@ enum State idle_handler(void) {
 }
 
 enum State armed_handler(void) {
-  //TODO: Set to CONFIGMODE, do self test, set to AMG mode
+  //TODO: Obtain absolute position
+
+  //TODO: Set to CONFIGMODE, do self test, set to AMG mode?
   imu.queryData();
   if ((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
       || (imu.AZ < -20 || imu.AZ > 20)) {
@@ -72,9 +154,13 @@ enum State armed_handler(void) {
 }
 
 enum State active_handler(void) {
+  get_location();
+  set_payload();
+  if (DEBUG) Serial.println("Starting send");
+  radio.tx(data, 6);
+  if (DEBUG) Serial.println("Done send");
   imu.queryData();
-  //TODO: Condition for exiting active state
-  //imu.AX && imu.AY && imu.AZ
+  //TODO: Add loggings
   if (DEBUG) Serial.print("Counter:");
   if (DEBUG) Serial.println(counter);
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
@@ -89,12 +175,14 @@ enum State active_handler(void) {
     if (DEBUG) Serial.println("COUNTER RESET");
     counter = 0;
   }
-  //logLineOfDataToSDCard();
-  //TODO: Transmit Data
   return ACTIVE;
 }
 
 enum State landed_handler(void) {
+  get_location();
+  set_payload();
+  radio.tx(data, 6);
+  delay(1000);
   return LANDED;
 }
 
@@ -103,49 +191,11 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
-  // Serial.print("Satellite Value:");
-  // Serial.println(gps.satellites.value());
-  // Serial.print("hdop:");
-  // Serial.println(gps.hdop.hdop(), 1);
-  // Serial.print("location age:");
-  // Serial.println(gps.location.age());
-  // Serial.print("location lat:");
-  // Serial.println(gps.location.lat(), 7);
-  // Serial.print("location lng:");
-  // Serial.println(gps.location.lng(), 8);
-  // Serial.print("altitude:");
-  // Serial.println(gps.altitude.meters(), 2);
-  // Serial.print("time hour:");
-  // Serial.println(gps.time.hour());
-  // Serial.print("time min:");
-  // Serial.println(gps.time.minute());
-  // Serial.print("time sec:");
-  // Serial.println(gps.time.second());
-  // Serial.print("course deg:");
-  // Serial.println(gps.course.deg(), 2);
-  // Serial.print("speed:");
-  // Serial.println(gps.speed.mps());
-
-  double lat = 52.14383333333333;
-  Serial.print("Latitude: ");
-  Serial.println(lat);
-  int lat_int = lat * 10000000000000000; // 5214383333333333
-  Serial.print("Int Latitude: ");
-  Serial.println(lat_int, BIN);
-  uint8_t MSB_lat = (lat_int & 0xFF00) >> 8;
-  uint8_t LSB_lat = lat_int & 0x00FF;
-  Serial.print("MSB_lat: ");
-  Serial.println(MSB_lat, BIN);
-  Serial.print("LSB_lat: ");
-  Serial.println(LSB_lat, BIN);
-
-  // Serial.print("Lattitude: ");
-  // Serial.println(latsend, HEX);
-  byte data[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-  Serial.println("Starting send");
+  get_location();
+  set_payload();
+  if (DEBUG) Serial.println("Starting send");
   radio.tx(data, 6);
-  Serial.println("Done send");
-  delay(300);
+  if (DEBUG) Serial.println("Done send");
   return TEST;
 }
 
