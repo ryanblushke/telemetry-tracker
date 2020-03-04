@@ -31,7 +31,7 @@ void fastBlink() {
   delay(200);
 }
 
-void update_relative_location(){
+void update_relative_location() {
   //Rounding error from .009 * 100000. Goes to 899.
   // TODO: Relative Latitude/Longitude is backwards
   GPS_lat_rel = (GPS_lat_abs - gps.location.lat()) * 100000;
@@ -54,7 +54,7 @@ void update_relative_location(){
 
 //Payload first 3 bits header, next 11 bits for lat (first bit sign),
 // next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
-void encode_relative_packet(){
+void encode_relative_packet() {
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
   uint8_t GPS_lng_rel_top;
@@ -63,7 +63,7 @@ void encode_relative_packet(){
   uint8_t altitude_rel_top;
   uint8_t altitude_rel_bot;
 
-  if(GPS_lat_rel < 0){
+  if (GPS_lat_rel < 0) {
     GPS_lat_rel = GPS_lat_rel * -1;
     GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
     GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
@@ -71,8 +71,7 @@ void encode_relative_packet(){
     data[0] |= GPS_lat_rel_top;
     data[0] |= 0x10;
     data[1] = (GPS_lat_rel_bot << 2);
-  }
-  else{
+  } else {
     GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
     GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
     data[0] &= 0xE0;
@@ -81,7 +80,7 @@ void encode_relative_packet(){
     data[1] = (GPS_lat_rel_bot << 2);
   }
 
-  if(GPS_lng_rel < 0){
+  if (GPS_lng_rel < 0) {
     GPS_lng_rel = GPS_lng_rel * -1;
     GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
     GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
@@ -91,8 +90,7 @@ void encode_relative_packet(){
     data[1] |= GPS_lng_rel_top;
     data[2] = GPS_lng_rel_mid;
     data[3] = GPS_lng_rel_bot;
-  }
-  else{
+  } else {
     GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
     GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
     GPS_lng_rel_bot = (GPS_lng_rel & 0x0001);
@@ -102,7 +100,7 @@ void encode_relative_packet(){
     data[3] = GPS_lng_rel_bot;
   }
 
-  if(altitude_rel < 0){
+  if (altitude_rel < 0) {
     altitude_rel = altitude_rel * -1;
     altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
     altitude_rel_bot = (altitude_rel & 0x00F);
@@ -110,8 +108,7 @@ void encode_relative_packet(){
     data[3] |= 0x40;
     data[3] |= altitude_rel_top;
     data[4] = altitude_rel_bot << 4;
-  }
-  else{
+  } else {
     altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
     altitude_rel_bot = (altitude_rel & 0x00F);
     data[3] &= ~0x7F;
@@ -395,8 +392,8 @@ void loop() {
     curr_state = test_handler();
     break;
   default:
-      Serial.print("Error - Invalid State: ");
-      Serial.println(curr_state);
+    Serial.print("Error - Invalid State: ");
+    Serial.println(curr_state);
   }
 
   if (millis() > (lastLogTime + 100)) {
