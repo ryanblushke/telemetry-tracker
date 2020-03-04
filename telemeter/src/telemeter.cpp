@@ -5,10 +5,9 @@
 #define DEBUG true
 #define FLASH false
 
-byte data[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t altitude_msb = 0;
-uint8_t altitude_lsb = 0;
-uint16_t altitude = 0;
+byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
+double altitude_abs = 0;
+int16_t altitude_rel = 0;
 int16_t GPS_lat_rel = 0;
 int16_t GPS_lng_rel = 0;
 double GPS_lat_abs = 0;
@@ -33,14 +32,16 @@ void fastBlink() {
 }
 
 void get_location(){
-  altitude = gps.altitude.meters();
-  altitude_msb = altitude % 0xFF;
-  altitude_lsb = (altitude >> 8) % 0xFF;
+  altitude_rel = gps.altitude.meters() - altitude_abs;
+  //Rounding error from .009 * 100000. Goes to 899.
   GPS_lat_rel = (GPS_lat_abs - gps.location.lat()) * 100000;
   GPS_lng_rel = (GPS_lng_abs - gps.location.lng()) * 100000;
   if (DEBUG) {
+    altitude_rel = 900;
+    GPS_lat_rel = 900;
+    GPS_lng_rel = 900;
     Serial.print("Alititude: ");
-    Serial.println(altitude);
+    Serial.println(altitude_rel);
     Serial.print("GPS_lng_rel: ");
     Serial.println(GPS_lng_rel);
     Serial.print("GPS_lat_rel: ");
@@ -48,60 +49,73 @@ void get_location(){
   }
 }
 
-
+//Payload first 3 bits header, next 11 bits for lat (first bit sign),
+// next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
 void set_payload(){
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
   uint8_t GPS_lng_rel_top;
+  uint8_t GPS_lng_rel_mid;
   uint8_t GPS_lng_rel_bot;
+  uint8_t altitude_rel_top;
+  uint8_t altitude_rel_bot;
   if(GPS_lat_rel < 0){
     if(DEBUG) Serial.print("In set_payload: GPS_lat_rel: ");
     if(DEBUG) Serial.println(GPS_lat_rel);
     GPS_lat_rel = GPS_lat_rel * -1;
-    if(DEBUG) Serial.println(GPS_lat_rel);
-    if(DEBUG) Serial.println(GPS_lat_rel, HEX);
-    GPS_lat_rel_top = (GPS_lat_rel & 0x0780) >> 7;
-    GPS_lat_rel_bot = (GPS_lat_rel & 0x00FF);
-    if(DEBUG) Serial.println(GPS_lat_rel_top, BIN);
-    if(DEBUG) Serial.println(GPS_lat_rel_bot, BIN);
+    GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
+    GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
     data[0] &= 0xE0;
     data[0] |= GPS_lat_rel_top;
     data[0] |= 0x10;
-    data[1] = GPS_lat_rel_bot;
+    data[1] = (GPS_lat_rel_bot << 2);
     if(DEBUG) Serial.println(data[0], HEX);
   }
   else{
-    GPS_lat_rel_top = (GPS_lat_rel & 0x0780) >> 7;
-    GPS_lat_rel_bot = (GPS_lat_rel & 0x00FF);
+    GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
+    GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
     data[0] &= 0xE0;
     data[0] |= GPS_lat_rel_top;
     data[0] &= ~0x10;
-    data[1] = GPS_lat_rel_bot;
+    data[1] = (GPS_lat_rel_bot << 2);
   }
   if(GPS_lng_rel < 0){
     GPS_lng_rel = GPS_lng_rel * -1;
-    if(DEBUG) Serial.println(GPS_lng_rel);
-    if(DEBUG) Serial.println(GPS_lng_rel, HEX);
-    GPS_lng_rel_top = (GPS_lng_rel & 0x07F0) >> 4;
-    GPS_lng_rel_bot = (GPS_lng_rel & 0x000F);
-    if(DEBUG) Serial.println(GPS_lng_rel_top, BIN);
-    if(DEBUG) Serial.println(GPS_lng_rel_bot, BIN);
-    data[2] = GPS_lng_rel_top;
-    data[2] |= 0x80;
+    GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
+    GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
+    GPS_lng_rel_bot = (GPS_lng_rel & 0x0001);
+    data[1] |= 0x02;
+    data[1] &= ~0x01;
+    data[1] |= GPS_lng_rel_top;
+    data[2] = GPS_lng_rel_mid;
     data[3] = GPS_lng_rel_bot;
-    if(DEBUG) Serial.println(data[2], HEX);
-    if(DEBUG) Serial.println(data[3], HEX);
   }
   else{
-    GPS_lng_rel_top = (GPS_lng_rel & 0x07F0) >> 4;
-    GPS_lng_rel_bot = (GPS_lng_rel & 0x000F);
-    data[2] = GPS_lng_rel_top;
-    data[2] &= ~0x80;
+    GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
+    GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
+    GPS_lng_rel_bot = (GPS_lng_rel & 0x0001);
+    data[1] &= ~0x03;
+    data[1] |= GPS_lng_rel_top;
+    data[2] = GPS_lng_rel_mid;
     data[3] = GPS_lng_rel_bot;
   }
-  //TODO: Set first 4 bits of altitude in data[3] last 12 in data[4]+[5]
-  //data[3] = altitude_msb;
-  //data[4] = altitude_lsb;
+  if(altitude_rel < 0){
+    altitude_rel = altitude_rel * -1;
+    altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
+    altitude_rel_bot = (altitude_rel & 0x00F);
+    data[3] &= ~0x7F;
+    data[3] |= 0x40;
+    data[3] |= altitude_rel_top;
+    data[4] = altitude_rel_bot << 4;
+  }
+  else{
+    altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
+    altitude_rel_bot = (altitude_rel & 0x00F);
+    data[3] &= ~0x7F;
+    data[3] |= altitude_rel_top;
+    data[4] = altitude_rel_bot << 4;
+  }
+  //TODO: SET BATTERYVOLTAGE IN LAST 4 BITS
 }
 
 enum State {
@@ -157,7 +171,7 @@ enum State active_handler(void) {
   get_location();
   set_payload();
   if (DEBUG) Serial.println("Starting send");
-  radio.tx(data, 6);
+  radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
   imu.queryData();
   //TODO: Add loggings
@@ -181,7 +195,7 @@ enum State active_handler(void) {
 enum State landed_handler(void) {
   get_location();
   set_payload();
-  radio.tx(data, 6);
+  radio.tx(data, 5);
   delay(1000);
   return LANDED;
 }
@@ -194,7 +208,7 @@ enum State test_handler(void) {
   get_location();
   set_payload();
   if (DEBUG) Serial.println("Starting send");
-  radio.tx(data, 6);
+  radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
   return TEST;
 }
@@ -206,7 +220,7 @@ void setup() {
   imu.init();
   flash.init();
   pressureSensor.init();
-  radio.TXradioinit(6);
+  radio.TXradioinit(5);
 
   // startTimer(10); // In Hz
   pinMode(LED_BUILTIN, OUTPUT);

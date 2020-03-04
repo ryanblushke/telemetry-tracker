@@ -33,10 +33,11 @@ void loop() {
   Serial.println("ACK: " + msg);
 
   if (radio.dataready()) {
-    byte buffer[6];
-    radio.rx(buffer, 6);
-    for (int i = 0; i < 6; i++) {
+    byte buffer[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
+    radio.rx(buffer, 5);
+    for (int i = 0; i < 5; i++) {
       Serial.print(buffer[i], HEX);
+      Serial.print(", ");
     }
     Serial.println();
     Serial.print("RSSI: ");
