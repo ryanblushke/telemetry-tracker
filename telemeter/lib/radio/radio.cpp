@@ -51,19 +51,15 @@ bool Radio::RXradioinit(){
 	good &= writemasked(0x09, 0b10001111, 0b10001111);  // Set PA_BOOST, set OutputPower to 1111
 	good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output mode
 	good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
-	good &= writemasked(0x1D, 0b01111000, 0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
-  // good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
-
-	// writemasked(0x1D, 0b01111001, 0b11111111)  # ModemConfig1 - Bw=125khz, CR=4/8, inp header
-	good &= writemasked(0x1E, 0b11000000, 0b11111111);  // ModemConfig2 - Sf=4096,  , CRC on, TimeoutMSB=0
-	// writemasked(0x1E, 0b11000100, 0b11111111)  # ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
-  // writemasked(0x1E, 0b10000100, 0b11111111)  # ModemConfig2 - Sf=256, single packet, CRC on, TimeoutMSB=0
-	// writemasked(0x26, 0b00001100, 0b00001100)  # ModemConfig3 - set AGC on, Lowdatarateoptimise on
-	good &= writemasked(0x26, 0b00000100, 0b00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
-	// LDR optimise needs to be off, or it fails to send messages longer then ~4 bytes, despite the datasheet
-	good &= writemasked(0x26, 0x00, 0xFF);  // Lora data pointer
-	good &= writemasked(0x0F, 0x00, 0xFF);  // Set RxBase Address
-	// writemasked(0x22, 6, 0xFF);  // Set payload length - don't need this, unless using implicit header
+  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=0
+	good &= writemasked(0x1D, 0b01111000, 0b11111111);
+  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=0, SymbTimeoutMSB=0
+	good &= writemasked(0x1E, 0b11000000, 0b11111111);
+  // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=0
+  // TODO: May need to enable LowDataRateOptimize
+	good &= writemasked(0x26, 0b00000100, 0b00001100);
+  // RegFifoRxBaseAddr (0x0F) - FifoRxBaseAddr=0x00
+	good &= writemasked(0x0F, 0x00, 0xFF);
   return good;
 }
 
