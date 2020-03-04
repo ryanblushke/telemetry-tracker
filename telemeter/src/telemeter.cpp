@@ -17,7 +17,7 @@ const int chipSelect = 8;
 SdFat sd;
 SdFile file;
 TinyGPSPlus gps;
-
+uint32_t lastLogTime = 0;
 
 IMU imu;
 PressureSensor pressureSensor;
@@ -31,27 +31,30 @@ void fastBlink() {
   delay(200);
 }
 
-void get_location(){
-  altitude_rel = gps.altitude.meters() - altitude_abs;
+void update_relative_location() {
   //Rounding error from .009 * 100000. Goes to 899.
+  // TODO: Relative Latitude/Longitude is backwards
   GPS_lat_rel = (GPS_lat_abs - gps.location.lat()) * 100000;
   GPS_lng_rel = (GPS_lng_abs - gps.location.lng()) * 100000;
+  altitude_rel = gps.altitude.meters() - altitude_abs;
+
   if (DEBUG) {
-    altitude_rel = 900;
     GPS_lat_rel = 900;
     GPS_lng_rel = 900;
-    Serial.print("Alititude: ");
-    Serial.println(altitude_rel);
-    Serial.print("GPS_lng_rel: ");
-    Serial.println(GPS_lng_rel);
-    Serial.print("GPS_lat_rel: ");
+    altitude_rel = 900;
+
+    Serial.print("Relative Latitude: ");
     Serial.println(GPS_lat_rel);
+    Serial.print("Relative Longitude: ");
+    Serial.println(GPS_lng_rel);
+    Serial.print("Relative Altitude: ");
+    Serial.println(altitude_rel);
   }
 }
 
 //Payload first 3 bits header, next 11 bits for lat (first bit sign),
 // next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
-void set_payload(){
+void encode_relative_packet() {
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
   uint8_t GPS_lng_rel_top;
@@ -59,9 +62,8 @@ void set_payload(){
   uint8_t GPS_lng_rel_bot;
   uint8_t altitude_rel_top;
   uint8_t altitude_rel_bot;
-  if(GPS_lat_rel < 0){
-    if(DEBUG) Serial.print("In set_payload: GPS_lat_rel: ");
-    if(DEBUG) Serial.println(GPS_lat_rel);
+
+  if (GPS_lat_rel < 0) {
     GPS_lat_rel = GPS_lat_rel * -1;
     GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
     GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
@@ -69,9 +71,7 @@ void set_payload(){
     data[0] |= GPS_lat_rel_top;
     data[0] |= 0x10;
     data[1] = (GPS_lat_rel_bot << 2);
-    if(DEBUG) Serial.println(data[0], HEX);
-  }
-  else{
+  } else {
     GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
     GPS_lat_rel_bot = (GPS_lat_rel & 0x003F);
     data[0] &= 0xE0;
@@ -79,7 +79,8 @@ void set_payload(){
     data[0] &= ~0x10;
     data[1] = (GPS_lat_rel_bot << 2);
   }
-  if(GPS_lng_rel < 0){
+
+  if (GPS_lng_rel < 0) {
     GPS_lng_rel = GPS_lng_rel * -1;
     GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
     GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
@@ -89,8 +90,7 @@ void set_payload(){
     data[1] |= GPS_lng_rel_top;
     data[2] = GPS_lng_rel_mid;
     data[3] = GPS_lng_rel_bot;
-  }
-  else{
+  } else {
     GPS_lng_rel_top = (GPS_lng_rel & 0x0200) >> 9;
     GPS_lng_rel_mid = (GPS_lng_rel & 0x01FE) >> 1;
     GPS_lng_rel_bot = (GPS_lng_rel & 0x0001);
@@ -99,7 +99,8 @@ void set_payload(){
     data[2] = GPS_lng_rel_mid;
     data[3] = GPS_lng_rel_bot;
   }
-  if(altitude_rel < 0){
+
+  if (altitude_rel < 0) {
     altitude_rel = altitude_rel * -1;
     altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
     altitude_rel_bot = (altitude_rel & 0x00F);
@@ -107,15 +108,14 @@ void set_payload(){
     data[3] |= 0x40;
     data[3] |= altitude_rel_top;
     data[4] = altitude_rel_bot << 4;
-  }
-  else{
+  } else {
     altitude_rel_top = (altitude_rel & 0x3F0) >> 4;
     altitude_rel_bot = (altitude_rel & 0x00F);
     data[3] &= ~0x7F;
     data[3] |= altitude_rel_top;
     data[4] = altitude_rel_bot << 4;
   }
-  //TODO: SET BATTERYVOLTAGE IN LAST 4 BITS
+  // TODO: SET BATTERY VOLTAGE IN LAST 4 BITS
 }
 
 enum State {
@@ -168,8 +168,8 @@ enum State armed_handler(void) {
 }
 
 enum State active_handler(void) {
-  get_location();
-  set_payload();
+  update_relative_location();
+  encode_relative_packet();
   if (DEBUG) Serial.println("Starting send");
   radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
@@ -193,8 +193,8 @@ enum State active_handler(void) {
 }
 
 enum State landed_handler(void) {
-  get_location();
-  set_payload();
+  update_relative_location();
+  encode_relative_packet();
   radio.tx(data, 5);
   delay(1000);
   return LANDED;
@@ -205,51 +205,12 @@ enum State data_transfer_handler(void) {
 }
 
 enum State test_handler(void) {
-  get_location();
-  set_payload();
+  update_relative_location();
+  encode_relative_packet();
   if (DEBUG) Serial.println("Starting send");
   radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
   return TEST;
-}
-
-
-void setup() {
-  Serial.begin(115200);
-  Wire.begin();
-  imu.init();
-  flash.init();
-  pressureSensor.init();
-  radio.TXradioinit(5);
-
-  // startTimer(10); // In Hz
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-
-  // while (!Serial) {;} // Wait for serial channel to open
-
-  analogReadResolution(12);
-  pinMode(A0, INPUT);
-  REG_ADC_CTRLB = 0x0110; // PRESCALER=0x1, RESSEL=0x1 - 16 bit result
-  REG_ADC_AVGCTRL = 0x0A; // Accumulate 1024 samples per read
-
-  Serial.println("Starting");
-  if (FLASH) {
-    while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
-      Serial.println("initialization failed");
-      fastBlink();
-    }
-  }
-
-  Serial1.begin(9600); // GPS connection
-  Serial1.println("$PMTK251,38400*27"); // Set serial baud to 38400
-  delay(300);
-  Serial1.begin(38400);
-  Serial1.println("$PMTK220,100*2F"); // Set update rate to 10HZ (Won't work at default baud)
-  if (DEBUG) {
-    Serial.print("initial state: ");
-    Serial.println(curr_state);
-  }
 }
 
 uint32_t smoothedADCValue = 0;
@@ -364,7 +325,43 @@ void logLineOfDataToSDCard() {
   // Serial.println(millis() - starttime);
 }
 
-uint32_t lastLogTime = 0;
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+  imu.init();
+  flash.init();
+  pressureSensor.init();
+  radio.TXradioinit(5);
+
+  // startTimer(10); // In Hz
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
+  // while (!Serial) {;} // Wait for serial channel to open
+
+  analogReadResolution(12);
+  pinMode(A0, INPUT);
+  REG_ADC_CTRLB = 0x0110; // PRESCALER=0x1, RESSEL=0x1 - 16 bit result
+  REG_ADC_AVGCTRL = 0x0A; // Accumulate 1024 samples per read
+
+  Serial.println("Starting");
+  if (FLASH) {
+    while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+      Serial.println("initialization failed");
+      fastBlink();
+    }
+  }
+
+  Serial1.begin(9600); // GPS connection
+  Serial1.println("$PMTK251,38400*27"); // Set serial baud to 38400
+  delay(300);
+  Serial1.begin(38400);
+  Serial1.println("$PMTK220,100*2F"); // Set update rate to 10HZ (Won't work at default baud)
+  if (DEBUG) {
+    Serial.print("initial state: ");
+    Serial.println(curr_state);
+  }
+}
 
 void loop() {
   if (DEBUG) {
@@ -395,10 +392,8 @@ void loop() {
     curr_state = test_handler();
     break;
   default:
-    if (DEBUG) {
-      Serial.print("Error - Invalid states: ");
-      Serial.println(curr_state);
-    }
+    Serial.print("Error - Invalid State: ");
+    Serial.println(curr_state);
   }
 
   if (millis() > (lastLogTime + 100)) {
