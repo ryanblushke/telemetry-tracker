@@ -51,13 +51,13 @@ Rectangle {
             id: map
             anchors.fill: parent
             plugin: mapplugin
-            center: QtPositioning.coordinate(52.12474, -106.65953) // Saskatoon
+            center: QtPositioning.coordinate(52.1247, -106.6595) // Saskatoon
             zoomLevel: 19
             activeMapType: map.supportedMapTypes[1]
 
             MapCircle {
                 id: currentLocation
-                center: QtPositioning.coordinate(52.12474, -106.65953)
+                center: QtPositioning.coordinate(52.1247, -106.6595)
                 radius: 2.0
                 color: 'red'
                 border.width: 3
@@ -68,12 +68,8 @@ Rectangle {
                 line.width: 3
                 line.color: 'blue'
                 path: [
-                    { latitude: 52.12475, longitude: -106.65943 },
-                    { latitude: 52.12467, longitude: -106.65945 },
-                    { latitude: 52.12476, longitude: -106.65925 },
-                    { latitude: 52.12466, longitude: -106.65945 },
-                    { latitude: 52.12466, longitude: -106.65925 },
-                    { latitude: 52.12477, longitude: -106.65915 }
+                    { latitude: 52.1248, longitude: -106.6594 },
+                    { latitude: 52.1249, longitude: -106.6593 },
                 ]
 
                 Connections {

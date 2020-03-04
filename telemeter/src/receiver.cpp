@@ -6,20 +6,12 @@
 
 Radio radio;
 
-void fastBlink() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(200);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(200);
-}
-
-
 void setup() {
   Serial.begin(115200);
   radio.RXradioinit();
 
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
 
   Serial.println("Test");
   while (!Serial) {;} // Wait for serial channel to open
