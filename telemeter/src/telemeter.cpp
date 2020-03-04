@@ -6,12 +6,28 @@
 #define FLASH false
 
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
-double altitude_abs = 0;
+byte absData[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+//Intermediate relative float values
+float GPS_lat_rel_flt = 0;
+float GPS_lng_rel_flt = 0;
+float alt_rel_flt = 0;
+
+//Intermediate absolute float values
+float GPS_lat_abs_flt = 0;
+float GPS_lng_abs_flt = 0;
+float alt_abs_flt = 0;
+
+//Final relative int16_t values
 int16_t altitude_rel = 0;
 int16_t GPS_lat_rel = 0;
 int16_t GPS_lng_rel = 0;
-double GPS_lat_abs = 0;
-double GPS_lng_abs = 0;
+
+//Final relative int64_t values
+uint32_t altitude_abs = 0;
+int32_t GPS_lat_abs = 0;
+int32_t GPS_lng_abs = 0;
+
 int counter = 0;
 const int chipSelect = 8;
 SdFat sd;
@@ -31,30 +47,81 @@ void fastBlink() {
   delay(200);
 }
 
-void update_relative_location() {
-  //Rounding error from .009 * 100000. Goes to 899.
-  // TODO: Relative Latitude/Longitude is backwards
-  GPS_lat_rel = (GPS_lat_abs - gps.location.lat()) * 100000;
-  GPS_lng_rel = (GPS_lng_abs - gps.location.lng()) * 100000;
-  altitude_rel = gps.altitude.meters() - altitude_abs;
+void updateAbsoluteLocation() {
+  GPS_lat_abs_flt = gps.location.lat() * 10000000;
+  GPS_lng_abs_flt = gps.location.lng() * 10000000;
+  alt_abs_flt = gps.altitude.meters();
+  GPS_lat_abs = GPS_lat_abs_flt;
+  GPS_lng_abs = GPS_lng_abs_flt;
+  altitude_abs = alt_abs_flt;
+  if(DEBUG) {
+    GPS_lat_abs = 1799999944;
+    GPS_lng_abs = 1799999944;
+    altitude_abs = 9850;
+    Serial.print("GPS_lat_abs: ");
+    Serial.println(GPS_lat_abs);
+    Serial.print("GPS_lng_abs: ");
+    Serial.println(GPS_lng_abs);
+    Serial.print("altitude_abs: ");
+    Serial.println(altitude_abs);
+  }
+}
+
+// Need 32 bits (1 sign + 31 data) (8 bytes) to represent a max value of 1799999999
+// Lat long total of 64 bits for both lat and long
+// Need 13 bits (2 bytes) to represent a max value of 9850
+// Total of  bits or  bytes
+void encodeAbsolutePacket() {
+  for(int i = 0; i < 10; i++) {
+    absData[i] = 0x00;
+  }
+  if(GPS_lat_abs < 0) {
+    GPS_lat_abs = GPS_lat_abs * -1;
+    absData[0] = 0x80;
+  }
+  absData[0] |= (GPS_lat_abs & 0x7F000000) >> 24;
+  absData[1] = (GPS_lat_abs & 0xFF0000) >> 16;
+  absData[2] = (GPS_lat_abs & 0xFF00) >> 8;
+  absData[3] = (GPS_lat_abs & 0xFF);
+  if(GPS_lng_abs < 0) {
+    GPS_lng_abs = GPS_lng_abs * -1;
+    absData[4] |= 0x80;
+  }
+  absData[4] |= (GPS_lng_abs & 0x7F000000) >> 24;
+  absData[5] = (GPS_lng_abs & 0xFF0000) >> 16;
+  absData[6] = (GPS_lng_abs & 0xFF00) >> 8;
+  absData[7] = (GPS_lng_abs & 0xFF);
+  absData[8] = (altitude_abs & 0x3FC0) >> 6;
+  absData[9] = (altitude_abs & 0x3F) << 2;
+}
+
+void updateRelativeLocation() {
+  GPS_lat_rel_flt = (gps.location.lat() - GPS_lat_abs) * 100000;
+  GPS_lng_rel_flt = (gps.location.lng() - GPS_lng_abs) * 100000;
+  alt_rel_flt = gps.altitude.meters() - altitude_abs;
+  GPS_lat_rel = GPS_lat_rel_flt;
+  GPS_lng_rel = GPS_lng_rel_flt;
+  altitude_rel = alt_rel_flt;
 
   if (DEBUG) {
-    GPS_lat_rel = 900;
-    GPS_lng_rel = 900;
-    altitude_rel = 900;
-
-    Serial.print("Relative Latitude: ");
+    GPS_lat_rel_flt = .009 * 100000;
+    GPS_lng_rel_flt = .009 * 100000;
+    alt_rel_flt = 900;
+    GPS_lat_rel = GPS_lat_rel_flt;
+    GPS_lng_rel = GPS_lng_rel_flt;
+    altitude_rel = alt_rel_flt;
+    Serial.print("(uint16_t) Relative Latitude: ");
     Serial.println(GPS_lat_rel);
-    Serial.print("Relative Longitude: ");
+    Serial.print("(uint16_t) Relative Longitude: ");
     Serial.println(GPS_lng_rel);
-    Serial.print("Relative Altitude: ");
+    Serial.print("(uint16_t) Relative Altitude: ");
     Serial.println(altitude_rel);
   }
 }
 
 //Payload first 3 bits header, next 11 bits for lat (first bit sign),
 // next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
-void encode_relative_packet() {
+void encodeRelativePacket() {
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
   uint8_t GPS_lng_rel_top;
@@ -131,11 +198,11 @@ enum State {
 enum State curr_state = TEST;
 
 
-enum State sleep_handler(void) {
+enum State sleepHandler(void) {
   return SLEEP;
 }
 
-enum State idle_handler(void) {
+enum State idleHandler(void) {
   // send data only when you receive data:
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -154,7 +221,7 @@ enum State idle_handler(void) {
   return IDLE;
 }
 
-enum State armed_handler(void) {
+enum State armedHandler(void) {
   //TODO: Obtain absolute position
 
   //TODO: Set to CONFIGMODE, do self test, set to AMG mode?
@@ -167,9 +234,9 @@ enum State armed_handler(void) {
   }
 }
 
-enum State active_handler(void) {
-  update_relative_location();
-  encode_relative_packet();
+enum State activeHandler(void) {
+  updateRelativeLocation();
+  encodeRelativePacket();
   if (DEBUG) Serial.println("Starting send");
   radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
@@ -192,23 +259,26 @@ enum State active_handler(void) {
   return ACTIVE;
 }
 
-enum State landed_handler(void) {
-  update_relative_location();
-  encode_relative_packet();
+enum State landedHandler(void) {
+  updateRelativeLocation();
+  encodeRelativePacket();
   radio.tx(data, 5);
   delay(1000);
   return LANDED;
 }
 
-enum State data_transfer_handler(void) {
+enum State dataTransferHandler(void) {
   return DATA_TRANSFER;
 }
 
-enum State test_handler(void) {
-  update_relative_location();
-  encode_relative_packet();
+enum State testHandler(void) {
+  updateAbsoluteLocation();
+  updateRelativeLocation();
+  //encodeRelativePacket();
+  encodeAbsolutePacket();
   if (DEBUG) Serial.println("Starting send");
-  radio.tx(data, 5);
+  //radio.tx(data, 5);
+  radio.tx(absData, 10);
   if (DEBUG) Serial.println("Done send");
   return TEST;
 }
@@ -331,7 +401,8 @@ void setup() {
   imu.init();
   flash.init();
   pressureSensor.init();
-  radio.TXradioinit(5);
+  //radio.TXradioinit(5);
+  radio.TXradioinit(10);
 
   // startTimer(10); // In Hz
   pinMode(LED_BUILTIN, OUTPUT);
@@ -371,25 +442,25 @@ void loop() {
 
   switch (curr_state) {
   case SLEEP:
-    curr_state = sleep_handler();
+    curr_state = sleepHandler();
     break;
   case IDLE:
-    curr_state = idle_handler();
+    curr_state = idleHandler();
     break;
   case ARMED:
-    curr_state = armed_handler();
+    curr_state = armedHandler();
     break;
   case ACTIVE:
-    curr_state = active_handler();
+    curr_state = activeHandler();
     break;
   case LANDED:
-    curr_state = landed_handler();
+    curr_state = landedHandler();
     break;
   case DATA_TRANSFER:
-    curr_state = data_transfer_handler();
+    curr_state = dataTransferHandler();
     break;
   case TEST:
-    curr_state = test_handler();
+    curr_state = testHandler();
     break;
   default:
     Serial.print("Error - Invalid State: ");
