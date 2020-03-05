@@ -24,12 +24,16 @@ bool Radio::TXradioinit(int byteLen) {
   good &= writemasked(0x01, 0b00000000, 0b00000111);
   // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=1
   good &= writemasked(0x01, 0b10001000, 0b11001000);
+  // RegFrMsb (0x06) - Frf(23:16)=0xE4
+  good &= writemasked(0x06, 0xE4, 0xFF);
+  // RegFrMid (0x07) - Frf(15:8)=0xC0
+  good &= writemasked(0x07, 0xC0, 0xFF);
+  // RegFrLsb (0x08) - Frf(7:0)=0x00
+  good &= writemasked(0x08, 0x00, 0xFF);
   // RegOpMode (0x01) - Mode=001(STDBY)
   good &= writemasked(0x01, 0b00000001, 0b00000111);
   // RegPaConfig (0x09) - PaSelect=1(PA_BOOST), OutputPower=1111
   good &= writemasked(0x09, 0b10001111, 0b10001111);
-  // RegPaDac (0x4D) - PaDac=111
-  good &= writemasked(0x4D, 0b00000111, 0b00000111);
   // RegOcp (0x0B) - OcpOn=0
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
   // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
