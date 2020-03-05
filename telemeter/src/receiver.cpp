@@ -54,7 +54,7 @@ void decodeAbsolutePacket(){
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
   }
   GPS_lng_abs = GPS_lng_abs_undiv;
-  Serial.println("Longtitude Absolute before div: ");
+  Serial.println("Longitude Absolute before div: ");
   Serial.println(GPS_lng_abs_undiv);
   GPS_lng_abs = GPS_lng_abs_undiv / (float)10000000;
 
@@ -121,6 +121,7 @@ void loop() {
       Serial.print(data[i], HEX);
       Serial.print(", ");
     }
+    Serial.println();
     //decodeRelativePacket();
     decodeAbsolutePacket();
     Serial.println();
@@ -134,7 +135,7 @@ void loop() {
     Serial.println();
     Serial.print("Latitude Absolute: ");
     Serial.println(GPS_lat_abs);
-    Serial.print("Longtitude Absolute: ");
+    Serial.print("Longitude Absolute: ");
     Serial.println(GPS_lng_abs,8);
     Serial.print("Altitude Absolute: ");
     Serial.println(altitude_abs,8);
