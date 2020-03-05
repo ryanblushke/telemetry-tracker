@@ -4,7 +4,8 @@
 
 #include "radio.h"
 
-bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits of data to address
+bool Radio::writemasked(byte addr, byte data,
+                        byte mask) { // writes mask bits of data to address
   byte readdata = readbyte(addr) & ~mask;
   byte writedata = data & mask;
   digitalWrite(slaveSelectPin, LOW); // Start new transaction
@@ -15,25 +16,31 @@ bool Radio::writemasked(byte addr, byte data, byte mask){  // writes mask bits o
   return resp == (readdata | writedata);
 }
 
-bool Radio::TXradioinit(int bitLen){
+bool Radio::TXradioinit(int bitLen) {
   pinMode(slaveSelectPin, OUTPUT);
 
   SPI.begin();
   bool good = true;
   good &= writemasked(0x01, 0b00000000, 0b00000111);  // Set to sleep Mode
-  good &= writemasked(0x01, 0b10001000, 0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
+  good &= writemasked(0x01, 0b10001000,
+                      0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
   good &= writemasked(0x01, 0b00000001, 0b00000111);  // Set to Standby Mode
 
-  good &= writemasked(0x09, 0b10001111, 0b10001111);  // Set PA_BOOST, set OutputPower to 1111
+  good &= writemasked(0x09, 0b10001111,
+                      0b10001111);  // Set PA_BOOST, set OutputPower to 1111
   good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output
-  good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
+  good &= writemasked(0x0b, 0b00000000,
+                      0b00100000);  // Disable Overcurrent protection
 
-	// good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
-  good &= writemasked(0x1D, 0b01111000, 0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
+  // good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
+  good &= writemasked(0x1D, 0b01111000,
+                      0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
 
-  good &= writemasked(0x1E, 0b11000100, 0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
+  good &= writemasked(0x1E, 0b11000100,
+                      0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
 
-  good &= writemasked(0x26, 0b00000100, 0b00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
+  good &= writemasked(0x26, 0b00000100,
+                      0b00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
 
   good &= writemasked(0x0E, 0b00000000, 0b11111111);  //FIFOTxBaseAddress to 0x00
 
@@ -41,40 +48,47 @@ bool Radio::TXradioinit(int bitLen){
   return good;
 }
 
-bool Radio::RXradioinit(){
+bool Radio::RXradioinit() {
   pinMode(slaveSelectPin, OUTPUT);
   SPI.begin();
   bool good = true;
-	//good &= writemasked(0x01, 0x00, 0x07);  // Set to sleep Mode
-	good &= writemasked(0x01, 0b10001000, 0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
-	good &= writemasked(0x01, 0b00000101, 0b00000111);  // Set to Recieve Continous Mode
-	good &= writemasked(0x09, 0b10001111, 0b10001111);  // Set PA_BOOST, set OutputPower to 1111
-	good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output mode
-	good &= writemasked(0x0b, 0b00000000, 0b00100000);  // Disable Overcurrent protection
+  // RegOpMode (0x01) - Mode=000(SLEEP)
+  good &= writemasked(0x01, 0b00000000, 0b00000111);
+  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=1
+  good &= writemasked(0x01, 0b10001000, 0b11001000);
+  // RegOpMode (0x01) - Mode=101(RXCONTINUOUS)
+  good &= writemasked(0x01, 0b00000101, 0b00000111);
+  // RegPaConfig (0x09) - PaSelect=1(PA_BOOST), OutputPower=1111
+  good &= writemasked(0x09, 0b10001111, 0b10001111);
+  // RegPaDac (0x4D) - PaDac=111
+  good &= writemasked(0x4D, 0b00000111, 0b00000111);
+  // RegOcp (0x0B) - OcpOn=0
+  good &= writemasked(0x0B, 0b00000000, 0b00100000);
   // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=0
-	good &= writemasked(0x1D, 0b01111000, 0b11111111);
+  good &= writemasked(0x1D, 0b01111000, 0b11111111);
   // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=0, SymbTimeoutMSB=0
-	good &= writemasked(0x1E, 0b11000000, 0b11111111);
+  good &= writemasked(0x1E, 0b11000000, 0b11111111);
   // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=0
   // TODO: May need to enable LowDataRateOptimize
-	good &= writemasked(0x26, 0b00000100, 0b00001100);
+  good &= writemasked(0x26, 0b00000100, 0b00001100);
   // RegFifoRxBaseAddr (0x0F) - FifoRxBaseAddr=0x00
-	good &= writemasked(0x0F, 0x00, 0xFF);
+  good &= writemasked(0x0F, 0x00, 0xFF);
   return good;
 }
 
-void Radio::tx(byte data[], int dataLen){
+void Radio::tx(byte data[], int dataLen) {
   bool good = true;
   writemasked(0x01, 0b00000010, 0b00000111);  // Set to FSTX Mode
   delay(3);
   //TODO: Set fails safes for when good == FALSE
   //lcd.print(good);
-  for(int i = 0; i < dataLen; i++) {
+  for (int i = 0; i < dataLen; i++) {
     Serial.print(data[i], HEX);
     Serial.print(", ");
   }
   Serial.println("");
-  good &= writemasked(0x0D, 0b00000000, 0b11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
+  good &= writemasked(0x0D, 0b00000000,
+                      0b11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
   writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
   good &= writemasked(0x01, 0b00000011, 0b00000111); //set mode to TX
   byte stat = 0;
@@ -88,17 +102,18 @@ void Radio::tx(byte data[], int dataLen){
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
 // TODO: DEBUG THIS FUNCTION. I BELIEVE THERE WILL BE ISSUES HERE
-void Radio::rx(byte buffer[], byte len){  // Return 7 byte message
-	writemasked(0x0D, readbyte(0x10), 0xFF);  // Set SPI FIFO Address to location of last packet
-	// print("Start of packet", readbyte(0x10))
-	// writemasked(0x0D, 0, 0xFF)  # Set SPI FIFO Address to start of FIFO
-	readFIFO(buffer, len);
-	// print("End of last packet", readbyte(0x25))
-	// print("Number of bytes recieved", readbyte(0x13))
-	// data = data[4:]  # Remove four byte header added by radiohead
+void Radio::rx(byte buffer[], byte len) { // Return 7 byte message
+  writemasked(0x0D, readbyte(0x10),
+              0xFF);  // Set SPI FIFO Address to location of last packet
+  // print("Start of packet", readbyte(0x10))
+  // writemasked(0x0D, 0, 0xFF)  # Set SPI FIFO Address to start of FIFO
+  readFIFO(buffer, len);
+  // print("End of last packet", readbyte(0x25))
+  // print("Number of bytes recieved", readbyte(0x13))
+  // data = data[4:]  # Remove four byte header added by radiohead
 }
 
-byte Radio::readbyte(byte addr){  // Reads one byte at address
+byte Radio::readbyte(byte addr) { // Reads one byte at address
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(addr);//send address, for reading
   byte resp = SPI.transfer(0x00);//transfer zeros, to read register
@@ -106,47 +121,50 @@ byte Radio::readbyte(byte addr){  // Reads one byte at address
   return resp;
 }
 
-void Radio::writeFIFO(byte data[], int dataLen){  // writes data to FIFO register
+void Radio::writeFIFO(byte data[],
+                      int dataLen) { // writes data to FIFO register
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(0b10000000);//send address, for writing
-  for (int i = 0; i < dataLen; i++){
+  for (int i = 0; i < dataLen; i++) {
     SPI.transfer(data[i]); //send data
   }
   digitalWrite(slaveSelectPin, HIGH);//end transaction
 }
 
-void Radio::readFIFO(byte buffer[], byte num){  // Read num of bytes from Fifo buffer
+void Radio::readFIFO(byte buffer[],
+                     byte num) { // Read num of bytes from Fifo buffer
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(0b00000000); //send FIFO address, for reading
-  for (int i = 0; i < num; i++){
+  for (int i = 0; i < num; i++) {
     buffer[i] = SPI.transfer(0x00);//transfer zeros, to read register
   }
   digitalWrite(slaveSelectPin, HIGH);//end transaction
 }
 
-bool Radio::dataready(){  // Return true when message is ready
-	byte stat = readbyte(0x12);
-	if (0b01000000 != (stat & 0b01000000)){ // bit 6 is RxDone, wait until this is true
+bool Radio::dataready() { // Return true when message is ready
+  byte stat = readbyte(0x12);
+  if (0b01000000 != (stat &
+                     0b01000000)) { // bit 6 is RxDone, wait until this is true
     return false; // if bit not 1;
   }
-	// print("Stat:", "{0:b}".format(stat))
-	if (0b00100000 == (stat & 0b00100000)){  // bit 5 is PayloadCrcError
-		writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
+  // print("Stat:", "{0:b}".format(stat))
+  if (0b00100000 == (stat & 0b00100000)) { // bit 5 is PayloadCrcError
+    writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
     Serial.println("Error!");
-		return false;
+    return false;
   }  // exit if bit 1
-	// we now have a message with valid CRC
-	writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
-	return true;
+  // we now have a message with valid CRC
+  writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
+  return true;
 }
 
-int Radio::rssi(){
+int Radio::rssi() {
   byte raw = readbyte(0x1A);
   return (-137 + raw);
 }
 
-float Radio::snr(){
-	byte raw = readbyte(0x19);
-	raw = raw & 0b01111111;
-	return (raw / 4.0);
+float Radio::snr() {
+  byte raw = readbyte(0x19);
+  raw = raw & 0b01111111;
+  return (raw / 4.0);
 }
