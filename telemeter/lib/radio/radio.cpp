@@ -18,7 +18,6 @@ bool Radio::writemasked(byte addr, byte data,
 
 bool Radio::TXradioinit(int byteLen) {
   pinMode(slaveSelectPin, OUTPUT);
-
   SPI.begin();
   bool good = true;
   // RegOpMode (0x01) - Mode=000(SLEEP)
@@ -102,6 +101,7 @@ void Radio::tx(byte data[], int dataLen) {
   Serial.println("Trasmission Done.");
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
+
 // TODO: DEBUG THIS FUNCTION. I BELIEVE THERE WILL BE ISSUES HERE
 void Radio::rx(byte buffer[], byte len) { // Return 7 byte message
   writemasked(0x0D, readbyte(0x10),

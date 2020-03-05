@@ -37,10 +37,11 @@ enum State {
   TEST = 6
 };
 
-void decodeAbsolutePacket(){
+void decodeAbsolutePacket() {
   //Latitude Decode
-  GPS_lat_abs_undiv = ((data[0] & 0x7F) << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-  if((data[0] & 0x80) == 0x80) {
+  GPS_lat_abs_undiv = ((data[0] & 0x7F) << 24) | (data[1] << 16) |
+                      (data[2] << 8) | data[3];
+  if ((data[0] & 0x80) == 0x80) {
     GPS_lat_abs_undiv = GPS_lat_abs_undiv * -1;
   }
   GPS_lat_abs = GPS_lat_abs_undiv;
@@ -49,8 +50,9 @@ void decodeAbsolutePacket(){
   GPS_lat_abs = GPS_lat_abs_undiv / (float)10000000;
 
   //Longtitude Decode
-  GPS_lng_abs_undiv = ((data[4] & 0x7F) << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
-  if((data[4] & 0x08) == 0x80) {
+  GPS_lng_abs_undiv = ((data[4] & 0x7F) << 24) | (data[5] << 16) |
+                      (data[6] << 8) | data[7];
+  if ((data[4] & 0x08) == 0x80) {
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
   }
   GPS_lng_abs = GPS_lng_abs_undiv;
@@ -59,35 +61,36 @@ void decodeAbsolutePacket(){
   GPS_lng_abs = GPS_lng_abs_undiv / (float)10000000;
 
   //Altitude Decode
-  Serial.println(data[8],HEX);
-  Serial.println(data[9],HEX);
+  Serial.println(data[8], HEX);
+  Serial.println(data[9], HEX);
   altitude_abs = (data[8] << 6);
-  Serial.println(data[9] >> 2,HEX);
+  Serial.println(data[9] >> 2, HEX);
   altitude_abs |= (data[9] >> 2);
-   Serial.println(altitude_abs);
+  Serial.println(altitude_abs);
 }
 
-void decodeRelativePacket(){
+void decodeRelativePacket() {
   header = (data[0] & 0xE0) >> 5;
 
   //Latitude Decode
   GPS_lat_rel_undiv = ((data[0] & 0x0F) << 6) | ((data[1] & 0xFC) >> 2);
-  if((data[0] & 0x10) == 0x10){
+  if ((data[0] & 0x10) == 0x10) {
     GPS_lat_rel_undiv = GPS_lat_rel_undiv * -1;
   }
   GPS_lat_rel = GPS_lat_rel_undiv;
   GPS_lat_rel = GPS_lat_rel / 100000;
 
   //Longtitude Decode
-  GPS_lng_rel_undiv = ((data[1] & 0x01) << 9) | (data[2] << 1) | ((data[3] & 0x10) >> 7);
-  if((data[1] & 0x02) == 0x02){
+  GPS_lng_rel_undiv = ((data[1] & 0x01) << 9) | (data[2] << 1) | ((
+                        data[3] & 0x10) >> 7);
+  if ((data[1] & 0x02) == 0x02) {
     GPS_lng_rel_undiv = GPS_lng_rel_undiv * -1;
   }
   GPS_lng_rel = GPS_lng_rel_undiv;
   GPS_lng_rel = GPS_lng_rel / 100000;
 
   altitude_rel = ((data[3] & 0x3F) << 4) | ((data[4] & 0xF0) >> 4);
-  if((data[3] & 0x40) == 0x40){
+  if ((data[3] & 0x40) == 0x40) {
     altitude_rel = altitude_rel * -1;
   }
 }
@@ -136,9 +139,9 @@ void loop() {
     Serial.print("Latitude Absolute: ");
     Serial.println(GPS_lat_abs);
     Serial.print("Longitude Absolute: ");
-    Serial.println(GPS_lng_abs,8);
+    Serial.println(GPS_lng_abs, 8);
     Serial.print("Altitude Absolute: ");
-    Serial.println(altitude_abs,8);
+    Serial.println(altitude_abs, 8);
     Serial.println();
     Serial.print("RSSI: ");
     Serial.println(radio.rssi());

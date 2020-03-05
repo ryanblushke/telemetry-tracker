@@ -54,7 +54,7 @@ void updateAbsoluteLocation() {
   GPS_lat_abs = GPS_lat_abs_flt;
   GPS_lng_abs = GPS_lng_abs_flt;
   altitude_abs = alt_abs_flt;
-  if(DEBUG) {
+  if (DEBUG) {
     GPS_lat_abs = 1799999944;
     GPS_lng_abs = 1799999944;
     altitude_abs = 9850;
@@ -72,10 +72,10 @@ void updateAbsoluteLocation() {
 // Need 13 bits (2 bytes) to represent a max value of 9850
 // Total of  bits or  bytes
 void encodeAbsolutePacket() {
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     absData[i] = 0x00;
   }
-  if(GPS_lat_abs < 0) {
+  if (GPS_lat_abs < 0) {
     GPS_lat_abs = GPS_lat_abs * -1;
     absData[0] = 0x80;
   }
@@ -83,7 +83,7 @@ void encodeAbsolutePacket() {
   absData[1] = (GPS_lat_abs & 0xFF0000) >> 16;
   absData[2] = (GPS_lat_abs & 0xFF00) >> 8;
   absData[3] = (GPS_lat_abs & 0xFF);
-  if(GPS_lng_abs < 0) {
+  if (GPS_lng_abs < 0) {
     GPS_lng_abs = GPS_lng_abs * -1;
     absData[4] |= 0x80;
   }
