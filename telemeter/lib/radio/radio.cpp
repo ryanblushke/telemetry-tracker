@@ -4,8 +4,16 @@
 
 #include "radio.h"
 
-bool Radio::writemasked(byte addr, byte data,
-                        byte mask) { // writes mask bits of data to address
+byte Radio::readbyte(byte addr) { // Reads one byte at address
+  digitalWrite(slaveSelectPin, LOW); // Start transaction
+  SPI.transfer(addr); // send address, for reading
+  byte resp = SPI.transfer(0x00); // transfer zeros, to read register
+  digitalWrite(slaveSelectPin, HIGH); // end transaction
+  return resp;
+}
+
+// writes mask bits of data to address
+bool Radio::writemasked(byte addr, byte data, byte mask) {
   byte readdata = readbyte(addr) & ~mask;
   byte writedata = data & mask;
   digitalWrite(slaveSelectPin, LOW); // Start new transaction
@@ -38,8 +46,8 @@ bool Radio::TXradioinit(int byteLen) {
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
   // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
   good &= writemasked(0x1D, 0b01111001, 0b11111111);
-  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=1, SymbTimeoutMSB=0
-  good &= writemasked(0x1E, 0b11000100, 0b11111111);
+  // RegModemConfig2 (0x1E) - SF=9, RxPayloadCrcOn=1, SymbTimeoutMSB=0
+  good &= writemasked(0x1E, 0b10010100, 0b11111111);
   // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
   // TODO: May need to enable LowDataRateOptimize
   good &= writemasked(0x26, 0b00000100, 0b00001100);
@@ -72,8 +80,8 @@ bool Radio::RXradioinit(int byteLen) {
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
   // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
   good &= writemasked(0x1D, 0b01111001, 0b11111111);
-  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=1, SymbTimeoutMSB=0
-  good &= writemasked(0x1E, 0b11000100, 0b11111111);
+  // RegModemConfig2 (0x1E) - SF=9, RxPayloadCrcOn=1, SymbTimeoutMSB=0
+  good &= writemasked(0x1E, 0b10010100, 0b11111111);
   // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
   // TODO: May need to enable LowDataRateOptimize
   good &= writemasked(0x26, 0b00000100, 0b00001100);
@@ -120,14 +128,6 @@ void Radio::rx(byte buffer[], byte len) { // Return 7 byte message
   // print("End of last packet", readbyte(0x25))
   // print("Number of bytes recieved", readbyte(0x13))
   // data = data[4:]  # Remove four byte header added by radiohead
-}
-
-byte Radio::readbyte(byte addr) { // Reads one byte at address
-  digitalWrite(slaveSelectPin, LOW); // Start transaction
-  SPI.transfer(addr);//send address, for reading
-  byte resp = SPI.transfer(0x00);//transfer zeros, to read register
-  digitalWrite(slaveSelectPin, HIGH);//end transaction
-  return resp;
 }
 
 void Radio::writeFIFO(byte data[],
