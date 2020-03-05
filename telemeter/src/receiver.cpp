@@ -94,7 +94,7 @@ void decodeRelativePacket(){
 
 void setup() {
   Serial.begin(115200);
-  radio.RXradioinit();
+  radio.RXradioinit(10);
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);

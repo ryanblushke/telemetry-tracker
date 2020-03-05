@@ -401,7 +401,6 @@ void setup() {
   imu.init();
   flash.init();
   pressureSensor.init();
-  //radio.TXradioinit(5);
   radio.TXradioinit(10);
 
   // startTimer(10); // In Hz

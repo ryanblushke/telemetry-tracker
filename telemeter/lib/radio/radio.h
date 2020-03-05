@@ -11,7 +11,7 @@ const int slaveSelectPin = 8;
 class Radio {
 public:
     bool TXradioinit(int byteLen);
-    bool RXradioinit();
+    bool RXradioinit(int byteLen);
     void tx(byte data[], int dataLen);
     void rx(byte buffer[], byte len);
     bool writemasked(byte addr, byte data, byte mask);

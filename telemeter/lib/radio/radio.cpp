@@ -16,39 +16,38 @@ bool Radio::writemasked(byte addr, byte data,
   return resp == (readdata | writedata);
 }
 
-bool Radio::TXradioinit(int bitLen) {
+bool Radio::TXradioinit(int byteLen) {
   pinMode(slaveSelectPin, OUTPUT);
 
   SPI.begin();
   bool good = true;
-  good &= writemasked(0x01, 0b00000000, 0b00000111);  // Set to sleep Mode
-  good &= writemasked(0x01, 0b10001000,
-                      0b11001000);  // Set to LORA Mode, sharedReg off, Low freq mode
-  good &= writemasked(0x01, 0b00000001, 0b00000111);  // Set to Standby Mode
-
-  good &= writemasked(0x09, 0b10001111,
-                      0b10001111);  // Set PA_BOOST, set OutputPower to 1111
-  good &= writemasked(0x4d, 0b00000111, 0b00000111);  // Enable High power output
-  good &= writemasked(0x0b, 0b00000000,
-                      0b00100000);  // Disable Overcurrent protection
-
-  // good &= writemasked(0x1D, 0b10011000, 0b11111111);  // ModemConfig1 - Bw=500khz, CR=4/8, exp header
-  good &= writemasked(0x1D, 0b01111000,
-                      0b11111111);  // ModemConfig1 - Bw=125khz, CR=4/8, exp header
-
-  good &= writemasked(0x1E, 0b11000100,
-                      0b11111111);  // ModemConfig2 - Sf=4096, single packet, CRC on, TimeoutMSB=0
-
-  good &= writemasked(0x26, 0b00000100,
-                      0b00001100);  // ModemConfig3 - set AGC on, Lowdatarateoptimise off
-
-  good &= writemasked(0x0E, 0b00000000, 0b11111111);  //FIFOTxBaseAddress to 0x00
-
-  good &= writemasked(0x22, bitLen, 0xFF);  // Set payload length
+  // RegOpMode (0x01) - Mode=000(SLEEP)
+  good &= writemasked(0x01, 0b00000000, 0b00000111);
+  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=1
+  good &= writemasked(0x01, 0b10001000, 0b11001000);
+  // RegOpMode (0x01) - Mode=001(STDBY)
+  good &= writemasked(0x01, 0b00000001, 0b00000111);
+  // RegPaConfig (0x09) - PaSelect=1(PA_BOOST), OutputPower=1111
+  good &= writemasked(0x09, 0b10001111, 0b10001111);
+  // RegPaDac (0x4D) - PaDac=111
+  good &= writemasked(0x4D, 0b00000111, 0b00000111);
+  // RegOcp (0x0B) - OcpOn=0
+  good &= writemasked(0x0B, 0b00000000, 0b00100000);
+  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
+  good &= writemasked(0x1D, 0b01111001, 0b11111111);
+  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=1, SymbTimeoutMSB=0
+  good &= writemasked(0x1E, 0b11000100, 0b11111111);
+  // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
+  // TODO: May need to enable LowDataRateOptimize
+  good &= writemasked(0x26, 0b00000100, 0b00001100);
+  // RegFifoTxBaseAddr (0x0E) - FifoTxBaseAddr=0x00
+  good &= writemasked(0x0E, 0b00000000, 0b11111111);
+  // RegPayloadLength (0x22) - PayloadLength=byteLen
+  good &= writemasked(0x22, byteLen, 0xFF);
   return good;
 }
 
-bool Radio::RXradioinit() {
+bool Radio::RXradioinit(int byteLen) {
   pinMode(slaveSelectPin, OUTPUT);
   SPI.begin();
   bool good = true;
@@ -64,15 +63,17 @@ bool Radio::RXradioinit() {
   good &= writemasked(0x4D, 0b00000111, 0b00000111);
   // RegOcp (0x0B) - OcpOn=0
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
-  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=0
-  good &= writemasked(0x1D, 0b01111000, 0b11111111);
-  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=0, SymbTimeoutMSB=0
-  good &= writemasked(0x1E, 0b11000000, 0b11111111);
-  // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=0
+  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
+  good &= writemasked(0x1D, 0b01111001, 0b11111111);
+  // RegModemConfig2 (0x1E) - SF=12, RxPayloadCrcOn=1, SymbTimeoutMSB=0
+  good &= writemasked(0x1E, 0b11000100, 0b11111111);
+  // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
   // TODO: May need to enable LowDataRateOptimize
   good &= writemasked(0x26, 0b00000100, 0b00001100);
   // RegFifoRxBaseAddr (0x0F) - FifoRxBaseAddr=0x00
   good &= writemasked(0x0F, 0x00, 0xFF);
+  // RegPayloadLength (0x22) - PayloadLength=byteLen
+  good &= writemasked(0x22, byteLen, 0xFF);
   return good;
 }
 
