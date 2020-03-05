@@ -4,7 +4,10 @@
 
 #define DEBUG true
 #define FLASH false
+#define NOLOCK true
+#define NOMOVE true
 
+byte stateChange[1] = {0x00};
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 byte absData[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -55,8 +58,8 @@ void updateAbsoluteLocation() {
   GPS_lng_abs = GPS_lng_abs_flt;
   altitude_abs = alt_abs_flt;
   if (DEBUG) {
-    GPS_lat_abs = 1799999944;
-    GPS_lng_abs = 1799999944;
+    GPS_lat_abs = 1799999999;
+    GPS_lng_abs = 1799999999;
     altitude_abs = 9850;
     Serial.print("GPS_lat_abs: ");
     Serial.println(GPS_lat_abs);
@@ -203,35 +206,39 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
-  // send data only when you receive data:
-  if (Serial.available() > 0) {
-    // read the incoming byte:
-    /*incomingByte = Serial.read();
-    if(incomingByte != -1) {
-      if(DEBUG) {
-        Serial.print("Recieved: ");
-        Serial.println(incomingByte);
-      }
-      if(incomingByte == "Armed") {
-        //TODO: Send on serial the state of armed.
-        return ARMED;
-      }
-    }*/
+  radio.RXradioinit(1);
+  if(radio.dataready()){
+    radio.rx(stateChange ,1);
+    return ARMED;
   }
   return IDLE;
 }
 
 enum State armedHandler(void) {
-  //TODO: Obtain absolute position
+  //Obtain Absolute position setup transmission for abs pos
+  //TODO: decide how long to transmit abs pos
+  if(DEBUG) Serial.println("Waiting for GPS lock");
+  if(NOMOVE || gps.location.lat() != 0) {
+    //Transmit absolute position to the receiver
+    updateAbsoluteLocation();
+    radio.TXradioinit(10);
+    for(int i = 0; i < 10; i++){
+      radio.tx(absData, 10);
+      delay(20);
+    }
 
-  //TODO: Set to CONFIGMODE, do self test, set to AMG mode?
-  imu.queryData();
-  if ((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
-      || (imu.AZ < -20 || imu.AZ > 20)) {
-    return ACTIVE;
-  } else {
-    return ARMED;
+    //Setup for active mode
+    radio.TXradioinit(5);
+
+    //Wait for movement to move into active
+    imu.queryData();
+    while(NOMOVE || !(imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
+        || (imu.AZ < -20 || imu.AZ > 20)) {
+          if(DEBUG) Serial.println("Waiting for movement");
+        };
+      return ACTIVE;
   }
+  return ARMED;
 }
 
 enum State activeHandler(void) {
@@ -267,13 +274,10 @@ enum State landedHandler(void) {
   return LANDED;
 }
 
-enum State dataTransferHandler(void) {
-  return DATA_TRANSFER;
-}
 
 enum State testHandler(void) {
   updateAbsoluteLocation();
-  updateRelativeLocation();
+  //updateRelativeLocation();
   //encodeRelativePacket();
   encodeAbsolutePacket();
   if (DEBUG) Serial.println("Starting send");
@@ -374,14 +378,6 @@ void logLineOfDataToSDCard() {
 
   Serial.println(float(smoothedADCValue) / pow(2.0, 32.0) * 3.3, 8);
 
-  // Serial.print(gps.satellites.value());
-  // Serial.print(",");
-  // Serial.print(gps.hdop.hdop(), 1);
-  // Serial.print(",");
-  // Serial.print(gps.location.age());
-  // Serial.print(",");
-  // Serial.println(gps.location.lat(), 7);
-
   if (gps.location.age() > 100) {
     digitalWrite(LED_BUILTIN, HIGH);
     delay(10);
@@ -454,9 +450,6 @@ void loop() {
     break;
   case LANDED:
     curr_state = landedHandler();
-    break;
-  case DATA_TRANSFER:
-    curr_state = dataTransferHandler();
     break;
   case TEST:
     curr_state = testHandler();

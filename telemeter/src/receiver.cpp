@@ -4,6 +4,7 @@
 
 #define DEBUG true
 
+byte stateChange[1] = {0x00};
 byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 
@@ -95,21 +96,113 @@ void decodeRelativePacket() {
   }
 }
 
-void setup() {
-  Serial.begin(115200);
-  radio.RXradioinit(10);
+enum State curr_state = TEST;
 
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
 
-  Serial.println("Test");
-  while (!Serial) {;} // Wait for serial channel to open
-
-  Serial.println("Starting");
+enum State sleepHandler(void) {
+  return SLEEP;
 }
 
+enum State idleHandler(void) {
+  radio.TXradioinit(1);
+  //TODO: Wait for armed response from python
+  for(int i = 0; i < 10; i++){
+    Serial.println("Transmitting to arm");
+    radio.tx(stateChange, 1);
+    delay(20);
+  }
+  return IDLE;
+}
 
-void loop() {
+enum State armedHandler(void) {
+  //TODO: SET FLAGS FOR RX/TX MODE AND BYTE AMOUNT
+  radio.RXradioinit(10);
+  if (radio.dataready()) {
+    // radio.rx(data, 5);
+    // for (int i = 0; i < 5; i++) {
+    //   Serial.print(data[i], HEX);
+    //   Serial.print(", ");
+    // }
+    radio.rx(data, 10);
+    for (int i = 0; i < 10; i++) {
+      Serial.print(data[i], HEX);
+      Serial.print(", ");
+    }
+    Serial.println();
+    //decodeRelativePacket();
+    decodeAbsolutePacket();
+    Serial.println();
+    // Serial.print("Latitude Relative: ");
+    // Serial.println(GPS_lat_rel, 5);
+    // Serial.print("Longtitude Relative: ");
+    // Serial.println(GPS_lng_rel, 5);
+    // Serial.print("Altitude Relative: ");
+    // Serial.println(altitude_rel);
+    // Serial.println();
+    Serial.println();
+    Serial.print("Latitude Absolute: ");
+    Serial.println(GPS_lat_abs);
+    Serial.print("Longitude Absolute: ");
+    Serial.println(GPS_lng_abs, 8);
+    Serial.print("Altitude Absolute: ");
+    Serial.println(altitude_abs);
+    Serial.println();
+    Serial.print("RSSI: ");
+    Serial.println(radio.rssi());
+    Serial.print("SNR: ");
+    Serial.println(radio.snr());
+  }
+  delay(1000);
+  return ARMED;
+}
+
+enum State activeHandler(void) {
+  String msg = Serial.readString();
+  Serial.println("ACK: " + msg);
+
+  if (radio.dataready()) {
+    // radio.rx(data, 5);
+    // for (int i = 0; i < 5; i++) {
+    //   Serial.print(data[i], HEX);
+    //   Serial.print(", ");
+    // }
+    radio.rx(data, 5);
+    for (int i = 0; i < 5; i++) {
+      Serial.print(data[i], HEX);
+      Serial.print(", ");
+    }
+    Serial.println();
+    //decodeRelativePacket();
+    decodeAbsolutePacket();
+    Serial.println();
+    // Serial.print("Latitude Relative: ");
+    // Serial.println(GPS_lat_rel, 5);
+    // Serial.print("Longtitude Relative: ");
+    // Serial.println(GPS_lng_rel, 5);
+    // Serial.print("Altitude Relative: ");
+    // Serial.println(altitude_rel);
+    // Serial.println();
+    Serial.println();
+    Serial.print("Latitude Absolute: ");
+    Serial.println(GPS_lat_abs);
+    Serial.print("Longitude Absolute: ");
+    Serial.println(GPS_lng_abs, 8);
+    Serial.print("Altitude Absolute: ");
+    Serial.println(altitude_abs);
+    Serial.println();
+    Serial.print("RSSI: ");
+    Serial.println(radio.rssi());
+    Serial.print("SNR: ");
+    Serial.println(radio.snr());
+  }
+  return ACTIVE;
+}
+
+enum State landedHandler(void) {
+  return LANDED;
+}
+
+enum State testHandler(void){
   String msg = Serial.readString();
   Serial.println("ACK: " + msg);
 
@@ -141,11 +234,55 @@ void loop() {
     Serial.print("Longitude Absolute: ");
     Serial.println(GPS_lng_abs, 8);
     Serial.print("Altitude Absolute: ");
-    Serial.println(altitude_abs, 8);
+    Serial.println(altitude_abs);
     Serial.println();
     Serial.print("RSSI: ");
     Serial.println(radio.rssi());
     Serial.print("SNR: ");
     Serial.println(radio.snr());
+  }
+  return TEST;
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  radio.RXradioinit(10);
+  Serial.println("Test");
+  while (!Serial) {;} // Wait for serial channel to open
+
+  Serial.println("Starting");
+}
+
+
+void loop() {
+  if (DEBUG) {
+    Serial.print("Current state: ");
+    Serial.println(curr_state);
+  }
+  switch (curr_state) {
+  case SLEEP:
+    curr_state = sleepHandler();
+    break;
+  case IDLE:
+    curr_state = idleHandler();
+    break;
+  case ARMED:
+    curr_state = armedHandler();
+    break;
+  case ACTIVE:
+    curr_state = activeHandler();
+    break;
+  case LANDED:
+    curr_state = landedHandler();
+    break;
+  case TEST:
+    curr_state = testHandler();
+    break;
+  default:
+    Serial.print("Error - Invalid State: ");
+    Serial.println(curr_state);
   }
 }
