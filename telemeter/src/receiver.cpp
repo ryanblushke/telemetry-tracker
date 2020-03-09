@@ -126,8 +126,8 @@ enum State idleHandler(void) {
     byteMode = 1;
   }
   //TODO: If statement comparing msg to decide if armed
-  //String msg = Serial.readString();
-  String msg = "ARM";
+  String msg = Serial.readString();
+  //String msg = "ARM";
   Serial.println("ACK: " + msg);
   if(msg == "ARM") {
     for(int i = 0; i < 10; i++){
@@ -137,6 +137,7 @@ enum State idleHandler(void) {
     }
     return ARMED;
   }
+  return IDLE;
 }
 
 enum State armedHandler(void) {
