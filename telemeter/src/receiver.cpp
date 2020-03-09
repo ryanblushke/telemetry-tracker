@@ -4,8 +4,12 @@
 
 #define DEBUG true
 
-byte stateChange[1] = {0x00};
+byte stateChange[1] = {0xFF};
 byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+//Flag for RX TX MODE
+int rxMode = 0;
+int byteMode = 0;
 
 
 // Relative data packet variables
@@ -25,6 +29,11 @@ float GPS_lat_abs = 0;
 float GPS_lng_abs = 0;
 int16_t altitude_abs = 0;
 
+// Current Location Variables
+float GPS_lat_cur = 0;
+float GPS_lng_cur = 0;
+float altitude_cur = 0;
+
 
 Radio radio;
 
@@ -37,6 +46,12 @@ enum State {
   DATA_TRANSFER = 5,
   TEST = 6
 };
+
+void updateLocation() {
+  GPS_lat_cur = GPS_lat_abs + GPS_lat_rel;
+  GPS_lng_cur = GPS_lng_abs + GPS_lng_rel;
+  altitude_cur = altitude_abs + altitude_rel;
+}
 
 void decodeAbsolutePacket() {
   //Latitude Decode
@@ -94,9 +109,10 @@ void decodeRelativePacket() {
   if ((data[3] & 0x40) == 0x40) {
     altitude_rel = altitude_rel * -1;
   }
+  updateLocation();
 }
 
-enum State curr_state = TEST;
+enum State curr_state = IDLE;
 
 
 enum State sleepHandler(void) {
@@ -104,25 +120,34 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
-  radio.TXradioinit(1);
-  //TODO: Wait for armed response from python
-  for(int i = 0; i < 10; i++){
-    Serial.println("Transmitting to arm");
-    radio.tx(stateChange, 1);
-    delay(20);
+  if(rxMode != 0 || byteMode != 0){
+    radio.TXradioinit(1);
+    rxMode = 0;
+    byteMode = 1;
   }
-  return IDLE;
+  //TODO: If statement comparing msg to decide if armed
+  //String msg = Serial.readString();
+  String msg = "ARM";
+  Serial.println("ACK: " + msg);
+  if(msg == "ARM") {
+    for(int i = 0; i < 10; i++){
+      Serial.println("Transmitting to arm");
+      radio.tx(stateChange, 1);
+      delay(20);
+    }
+    return ARMED;
+  }
 }
 
 enum State armedHandler(void) {
-  //TODO: SET FLAGS FOR RX/TX MODE AND BYTE AMOUNT
-  radio.RXradioinit(10);
+  if(rxMode != 1 || byteMode != 10){
+    radio.RXradioinit(10);
+    rxMode = 1;
+    byteMode = 10;
+    if (DEBUG) Serial.println("Set to rx for 10 bytes");
+  }
+
   if (radio.dataready()) {
-    // radio.rx(data, 5);
-    // for (int i = 0; i < 5; i++) {
-    //   Serial.print(data[i], HEX);
-    //   Serial.print(", ");
-    // }
     radio.rx(data, 10);
     for (int i = 0; i < 10; i++) {
       Serial.print(data[i], HEX);
@@ -151,21 +176,53 @@ enum State armedHandler(void) {
     Serial.println(radio.rssi());
     Serial.print("SNR: ");
     Serial.println(radio.snr());
+    return ACTIVE;
   }
-  delay(1000);
   return ARMED;
 }
 
 enum State activeHandler(void) {
-  String msg = Serial.readString();
-  Serial.println("ACK: " + msg);
-
+  //TODO: Add logic to switch to LANDED
+  if(rxMode != 1 || byteMode != 5){
+    radio.RXradioinit(5);
+    rxMode = 1;
+    byteMode = 5;
+    if (DEBUG) Serial.println("Set to rx for 5 bytes");
+  }
   if (radio.dataready()) {
-    // radio.rx(data, 5);
-    // for (int i = 0; i < 5; i++) {
-    //   Serial.print(data[i], HEX);
-    //   Serial.print(", ");
-    // }
+    radio.rx(data, 5);
+    for (int i = 0; i < 5; i++) {
+      Serial.print(data[i], HEX);
+      Serial.print(", ");
+    }
+    Serial.println();
+    decodeRelativePacket();
+    Serial.println();
+    Serial.print("Latitude Relative: ");
+    Serial.println(GPS_lat_rel, 5);
+    Serial.print("Longtitude Relative: ");
+    Serial.println(GPS_lng_rel, 5);
+    Serial.print("Altitude Relative: ");
+    Serial.println(altitude_rel);
+    Serial.println();
+    // Serial.println();
+    // Serial.print("Latitude Absolute: ");
+    // Serial.println(GPS_lat_abs);
+    // Serial.print("Longitude Absolute: ");
+    // Serial.println(GPS_lng_abs, 8);
+    // Serial.print("Altitude Absolute: ");
+    // Serial.println(altitude_abs);
+    // Serial.println();
+    Serial.print("RSSI: ");
+    Serial.println(radio.rssi());
+    Serial.print("SNR: ");
+    Serial.println(radio.snr());
+  }
+  return ACTIVE;
+}
+
+enum State landedHandler(void) {
+  if (radio.dataready()) {
     radio.rx(data, 5);
     for (int i = 0; i < 5; i++) {
       Serial.print(data[i], HEX);
@@ -195,10 +252,6 @@ enum State activeHandler(void) {
     Serial.print("SNR: ");
     Serial.println(radio.snr());
   }
-  return ACTIVE;
-}
-
-enum State landedHandler(void) {
   return LANDED;
 }
 
@@ -249,9 +302,11 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+  rxMode = 1;
+  byteMode = 10;
   radio.RXradioinit(10);
   Serial.println("Test");
-  while (!Serial) {;} // Wait for serial channel to open
+  if(DEBUG) while (!Serial) {;} // Wait for serial channel to open
 
   Serial.println("Starting");
 }
@@ -259,8 +314,8 @@ void setup() {
 
 void loop() {
   if (DEBUG) {
-    Serial.print("Current state: ");
-    Serial.println(curr_state);
+    //Serial.print("Current state: ");
+    //Serial.println(curr_state);
   }
   switch (curr_state) {
   case SLEEP:

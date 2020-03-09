@@ -113,7 +113,7 @@ void Radio::tx(byte data[], int dataLen) {
     stat = readbyte(0x12);
     // bit 3 is TxDone, wait until this is true
   } while (0b00001000 != (stat & 0b00001000));
-  Serial.println(millis() - ts);
+  //Serial.println(millis() - ts);
   Serial.println("Trasmission Done.");
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
