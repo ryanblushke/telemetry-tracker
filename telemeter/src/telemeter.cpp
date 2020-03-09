@@ -254,7 +254,6 @@ enum State armedHandler(void) {
     }
 
     //Wait for movement to move into active
-
     imu.queryData();
     while((!NOMOVE) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
         || (imu.AZ < -20 || imu.AZ > 20))) {
@@ -275,7 +274,7 @@ enum State activeHandler(void) {
   radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
   imu.queryData();
-  //TODO: Add loggings
+  logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
   && (imu.AZ > -20 && imu.AZ < 20)) {
     timeout = timeout - millis();
@@ -307,13 +306,18 @@ enum State landedHandler(void) {
 
 
 enum State testHandler(void) {
-  updateAbsoluteLocation();
-  //updateRelativeLocation();
-  //encodeRelativePacket();
-  encodeAbsolutePacket();
+  if(rxMode != 0 || byteMode != 5){
+    radio.TXradioinit(5);
+    rxMode = 0;
+    byteMode = 5;
+  }
+  //updateAbsoluteLocation();
+  updateRelativeLocation();
+  encodeRelativePacket();
+  //encodeAbsolutePacket();
   if (DEBUG) Serial.println("Starting send");
-  //radio.tx(data, 5);
-  radio.tx(absData, 10);
+  radio.tx(data, 5);
+  //radio.tx(absData, 10);
   if (DEBUG) Serial.println("Done send");
   return TEST;
 }

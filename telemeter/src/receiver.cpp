@@ -112,7 +112,7 @@ void decodeRelativePacket() {
   updateLocation();
 }
 
-enum State curr_state = IDLE;
+enum State curr_state = TEST;
 
 
 enum State sleepHandler(void) {
@@ -182,7 +182,8 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
-  //TODO: Add logic to switch to LANDED
+  //TODO: Add logic to switch to LANDED technically dont even have to switch
+  //TODO: Decide where the absolute and relative items are combined
   if(rxMode != 1 || byteMode != 5){
     radio.RXradioinit(5);
     rxMode = 1;
@@ -256,38 +257,41 @@ enum State landedHandler(void) {
 }
 
 enum State testHandler(void){
+
+  if(rxMode != 1 || byteMode != 5){
+    radio.RXradioinit(5);
+    rxMode = 1;
+    byteMode = 5;
+    if (DEBUG) Serial.println("Set to rx for 5 bytes");
+  }
+
   String msg = Serial.readString();
   Serial.println("ACK: " + msg);
 
   if (radio.dataready()) {
-    // radio.rx(data, 5);
-    // for (int i = 0; i < 5; i++) {
-    //   Serial.print(data[i], HEX);
-    //   Serial.print(", ");
-    // }
-    radio.rx(data, 10);
-    for (int i = 0; i < 10; i++) {
+    radio.rx(data, 5);
+    for (int i = 0; i < 5; i++) {
       Serial.print(data[i], HEX);
       Serial.print(", ");
     }
     Serial.println();
-    //decodeRelativePacket();
-    decodeAbsolutePacket();
+    decodeRelativePacket();
+    // decodeAbsolutePacket();
     Serial.println();
-    // Serial.print("Latitude Relative: ");
-    // Serial.println(GPS_lat_rel, 5);
-    // Serial.print("Longtitude Relative: ");
-    // Serial.println(GPS_lng_rel, 5);
-    // Serial.print("Altitude Relative: ");
-    // Serial.println(altitude_rel);
+    Serial.print("Latitude Relative: ");
+    Serial.println(GPS_lat_rel, 5);
+    Serial.print("Longtitude Relative: ");
+    Serial.println(GPS_lng_rel, 5);
+    Serial.print("Altitude Relative: ");
+    Serial.println(altitude_rel);
+    Serial.println();
     // Serial.println();
-    Serial.println();
-    Serial.print("Latitude Absolute: ");
-    Serial.println(GPS_lat_abs);
-    Serial.print("Longitude Absolute: ");
-    Serial.println(GPS_lng_abs, 8);
-    Serial.print("Altitude Absolute: ");
-    Serial.println(altitude_abs);
+    // Serial.print("Latitude Absolute: ");
+    // Serial.println(GPS_lat_abs);
+    // Serial.print("Longitude Absolute: ");
+    // Serial.println(GPS_lng_abs, 8);
+    // Serial.print("Altitude Absolute: ");
+    // Serial.println(altitude_abs);
     Serial.println();
     Serial.print("RSSI: ");
     Serial.println(radio.rssi());
