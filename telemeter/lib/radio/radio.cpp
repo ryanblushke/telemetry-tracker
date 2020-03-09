@@ -98,23 +98,23 @@ void Radio::tx(byte data[], int dataLen) {
   delay(3);
   //TODO: Set fails safes for when good == FALSE
   //lcd.print(good);
-  for (int i = 0; i < dataLen; i++) {
-    Serial.print(data[i], HEX);
-    Serial.print(", ");
-  }
-  Serial.println("");
+  // for (int i = 0; i < dataLen; i++) {
+  //   Serial.print(data[i], HEX);
+  //   Serial.print(", ");
+  // }
+  // Serial.println("");
   good &= writemasked(0x0D, 0b00000000,
                       0b11111111); //set FifoPtrAddr to FifoTxPtrBase (0x00)
   writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
   good &= writemasked(0x01, 0b00000011, 0b00000111); //set mode to TX
   byte stat = 0;
-  uint32_t ts = millis();
+  //uint32_t ts = millis();
   do {
     stat = readbyte(0x12);
     // bit 3 is TxDone, wait until this is true
   } while (0b00001000 != (stat & 0b00001000));
   //Serial.println(millis() - ts);
-  Serial.println("Trasmission Done.");
+  // Serial.println("Trasmission Done.");
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
 

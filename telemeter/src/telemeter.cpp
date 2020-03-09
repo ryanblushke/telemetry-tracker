@@ -17,7 +17,7 @@ enum State {
   TEST = 6
 };
 
-enum State curr_state = IDLE;
+enum State curr_state = TEST;
 
 byte stateChange[1] = {0x00};
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
@@ -300,12 +300,13 @@ enum State landedHandler(void) {
   updateRelativeLocation();
   encodeRelativePacket();
   radio.tx(data, 5);
-  delay(1000);
+  delay(10);
   return LANDED;
 }
 
 
 enum State testHandler(void) {
+  uint32_t ts = millis();
   if(rxMode != 0 || byteMode != 5){
     radio.TXradioinit(5);
     rxMode = 0;
@@ -319,6 +320,7 @@ enum State testHandler(void) {
   radio.tx(data, 5);
   //radio.tx(absData, 10);
   if (DEBUG) Serial.println("Done send");
+  Serial.println(millis() - ts);
   return TEST;
 }
 
