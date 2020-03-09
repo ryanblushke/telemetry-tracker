@@ -141,7 +141,7 @@ void updateRelativeLocation() {
 }
 
 //Payload first 3 bits header, next 11 bits for lat (first bit sign),
-// next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
+//next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
 void encodeRelativePacket() {
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
@@ -274,7 +274,8 @@ enum State activeHandler(void) {
   radio.tx(data, 5);
   if (DEBUG) Serial.println("Done send");
   imu.queryData();
-  logLineOfDataToSDCard();
+  //TODO: UNCOMMENT
+  //logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
   && (imu.AZ > -20 && imu.AZ < 20)) {
     timeout = timeout - millis();

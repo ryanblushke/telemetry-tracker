@@ -2,7 +2,7 @@
 
 #include "receiver.h"
 
-#define DEBUG true
+#define DEBUG false
 
 byte stateChange[1] = {0xFF};
 byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -61,8 +61,8 @@ void decodeAbsolutePacket() {
     GPS_lat_abs_undiv = GPS_lat_abs_undiv * -1;
   }
   GPS_lat_abs = GPS_lat_abs_undiv;
-  Serial.println("Latitude Absolute before div: ");
-  Serial.println(GPS_lat_abs_undiv);
+  if (DEBUG) Serial.println("Latitude Absolute before div: ");
+  if (DEBUG) Serial.println(GPS_lat_abs_undiv);
   GPS_lat_abs = GPS_lat_abs_undiv / (float)10000000;
 
   //Longtitude Decode
@@ -72,17 +72,14 @@ void decodeAbsolutePacket() {
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
   }
   GPS_lng_abs = GPS_lng_abs_undiv;
-  Serial.println("Longitude Absolute before div: ");
-  Serial.println(GPS_lng_abs_undiv);
+  if (DEBUG) Serial.println("Longitude Absolute before div: ");
+  if (DEBUG) Serial.println(GPS_lng_abs_undiv);
   GPS_lng_abs = GPS_lng_abs_undiv / (float)10000000;
 
   //Altitude Decode
-  Serial.println(data[8], HEX);
-  Serial.println(data[9], HEX);
   altitude_abs = (data[8] << 6);
-  Serial.println(data[9] >> 2, HEX);
   altitude_abs |= (data[9] >> 2);
-  Serial.println(altitude_abs);
+  if (DEBUG) Serial.println(altitude_abs);
 }
 
 void decodeRelativePacket() {
@@ -126,12 +123,12 @@ enum State idleHandler(void) {
     byteMode = 1;
   }
   //TODO: If statement comparing msg to decide if armed
-  String msg = Serial.readString();
-  //String msg = "ARM";
+  //String msg = Serial.readString();
+  String msg = "ARM";
   Serial.println("ACK: " + msg);
   if(msg == "ARM") {
     for(int i = 0; i < 10; i++){
-      Serial.println("Transmitting to arm");
+      if (DEBUG) Serial.println("Transmitting to arm");
       radio.tx(stateChange, 1);
       delay(20);
     }
@@ -148,35 +145,24 @@ enum State armedHandler(void) {
     if (DEBUG) Serial.println("Set to rx for 10 bytes");
   }
 
-  if (radio.dataready()) {
+  if(radio.dataready()) {
     radio.rx(data, 10);
-    for (int i = 0; i < 10; i++) {
-      Serial.print(data[i], HEX);
-      Serial.print(", ");
+    if (DEBUG) {
+      for (int i = 0; i < 10; i++) {
+        Serial.print(data[i], HEX);
+        Serial.print(", ");
+      }
     }
-    Serial.println();
-    //decodeRelativePacket();
     decodeAbsolutePacket();
-    Serial.println();
-    // Serial.print("Latitude Relative: ");
-    // Serial.println(GPS_lat_rel, 5);
-    // Serial.print("Longtitude Relative: ");
-    // Serial.println(GPS_lng_rel, 5);
-    // Serial.print("Altitude Relative: ");
-    // Serial.println(altitude_rel);
-    // Serial.println();
-    Serial.println();
-    Serial.print("Latitude Absolute: ");
     Serial.println(GPS_lat_abs);
-    Serial.print("Longitude Absolute: ");
-    Serial.println(GPS_lng_abs, 8);
-    Serial.print("Altitude Absolute: ");
+    Serial.println(GPS_lng_abs);
     Serial.println(altitude_abs);
-    Serial.println();
-    Serial.print("RSSI: ");
-    Serial.println(radio.rssi());
-    Serial.print("SNR: ");
-    Serial.println(radio.snr());
+    if (DEBUG) {
+      Serial.print("RSSI: ");
+      Serial.println(radio.rssi());
+      Serial.print("SNR: ");
+      Serial.println(radio.snr());
+    }
     return ACTIVE;
   }
   return ARMED;
@@ -193,32 +179,22 @@ enum State activeHandler(void) {
   }
   if (radio.dataready()) {
     radio.rx(data, 5);
-    for (int i = 0; i < 5; i++) {
-      Serial.print(data[i], HEX);
-      Serial.print(", ");
+    if (DEBUG) {
+      for (int i = 0; i < 5; i++) {
+        Serial.print(data[i], HEX);
+        Serial.print(", ");
+      }
     }
-    Serial.println();
     decodeRelativePacket();
-    Serial.println();
-    Serial.print("Latitude Relative: ");
     Serial.println(GPS_lat_rel, 5);
-    Serial.print("Longtitude Relative: ");
     Serial.println(GPS_lng_rel, 5);
-    Serial.print("Altitude Relative: ");
     Serial.println(altitude_rel);
-    Serial.println();
-    // Serial.println();
-    // Serial.print("Latitude Absolute: ");
-    // Serial.println(GPS_lat_abs);
-    // Serial.print("Longitude Absolute: ");
-    // Serial.println(GPS_lng_abs, 8);
-    // Serial.print("Altitude Absolute: ");
-    // Serial.println(altitude_abs);
-    // Serial.println();
-    Serial.print("RSSI: ");
-    Serial.println(radio.rssi());
-    Serial.print("SNR: ");
-    Serial.println(radio.snr());
+    if (DEBUG) {
+      Serial.print("RSSI: ");
+      Serial.println(radio.rssi());
+      Serial.print("SNR: ");
+      Serial.println(radio.snr());
+    }
   }
   return ACTIVE;
 }
@@ -226,33 +202,22 @@ enum State activeHandler(void) {
 enum State landedHandler(void) {
   if (radio.dataready()) {
     radio.rx(data, 5);
-    for (int i = 0; i < 5; i++) {
-      Serial.print(data[i], HEX);
-      Serial.print(", ");
+    if (DEBUG) {
+      for (int i = 0; i < 5; i++) {
+        Serial.print(data[i], HEX);
+        Serial.print(", ");
+      }
     }
-    Serial.println();
-    //decodeRelativePacket();
-    decodeAbsolutePacket();
-    Serial.println();
-    // Serial.print("Latitude Relative: ");
-    // Serial.println(GPS_lat_rel, 5);
-    // Serial.print("Longtitude Relative: ");
-    // Serial.println(GPS_lng_rel, 5);
-    // Serial.print("Altitude Relative: ");
-    // Serial.println(altitude_rel);
-    // Serial.println();
-    Serial.println();
-    Serial.print("Latitude Absolute: ");
-    Serial.println(GPS_lat_abs);
-    Serial.print("Longitude Absolute: ");
-    Serial.println(GPS_lng_abs, 8);
-    Serial.print("Altitude Absolute: ");
-    Serial.println(altitude_abs);
-    Serial.println();
-    Serial.print("RSSI: ");
-    Serial.println(radio.rssi());
-    Serial.print("SNR: ");
-    Serial.println(radio.snr());
+    decodeRelativePacket();
+    Serial.println(GPS_lat_rel, 5);
+    Serial.println(GPS_lng_rel, 5);
+    Serial.println(altitude_rel);
+    if (DEBUG) {
+      Serial.print("RSSI: ");
+      Serial.println(radio.rssi());
+      Serial.print("SNR: ");
+      Serial.println(radio.snr());
+    }
   }
   return LANDED;
 }
@@ -310,8 +275,8 @@ void setup() {
   rxMode = 1;
   byteMode = 10;
   radio.RXradioinit(10);
-  Serial.println("Test");
-  if(DEBUG) while (!Serial) {;} // Wait for serial channel to open
+  //TODO comment this line when we dont want to open serial to move past
+  while (!Serial) {;} // Wait for serial channel to open
 
   Serial.println("Starting");
 }
