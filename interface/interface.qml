@@ -84,18 +84,21 @@ Rectangle {
         id: stateButton1
         x: 900
         y: 189
-        text: qsTr("State1")
+        text: qsTr("ARM")
 
-        onClicked: gui.changeState(1)
+        onClicked: gui.changeState("ARM")
     }
 
-    Button {
-        id: stateButton2
+    Text {
+        id: element
         x: 900
-        y: 235
-        text: qsTr("State2")
-
-        onClicked: gui.changeState(2)
+        y: 240
+        width: 100
+        height: 32
+        text: qsTr("Current State:")
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
+        font.pixelSize: 12
     }
 }
 
