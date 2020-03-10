@@ -56,25 +56,26 @@ Rectangle {
             activeMapType: map.supportedMapTypes[1]
 
             MapCircle {
-                id: currentLocation
+                id: startingLocation
                 center: QtPositioning.coordinate(52.1247, -106.6595)
                 radius: 2.0
-                color: 'red'
+                color: 'green'
                 border.width: 3
+
+                Connections {
+                    target: gui
+                    onNewAbsCoordinate: startingLocation.center = QtPositioning.coordinate(lati, longi)
+                }
             }
 
             MapPolyline {
                 id: flightPath
                 line.width: 3
                 line.color: 'blue'
-                path: [
-                    { latitude: 52.1248, longitude: -106.6594 },
-                    { latitude: 52.1249, longitude: -106.6593 },
-                ]
 
                 Connections {
                     target: gui
-                    onNewCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
+                    onNewRelCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
                 }
             }
         }

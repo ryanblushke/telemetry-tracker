@@ -13,7 +13,8 @@ class Gui(QObject):
     """
 
     changeState = pyqtSignal(str)
-    newCoordinate = pyqtSignal(float, float, arguments=['lati', 'longi'])
+    newAbsCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
+    newRelCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
 
     def __init__(self, port_name):
         super().__init__()
@@ -45,25 +46,37 @@ class Gui(QObject):
     def recv_serial_msg(self):
         text = self.serial.readLine().data().decode()
         text = text.rstrip('\r\n')
-        if text == 'relLat':
-            self.relLat = text.lstrip('relLat')
-        elif text == 'relLong':
-            self.relLong = text.lstrip('relLong')
-        elif text == 'relAlt':
-            self.relAlt = text.lstrip('relAlt')
-            self.signal_new_coordinate(self.relLat, self.relLong)
-        elif text == 'absLat':
-            self.absLat = text.lstrip('absLat')
-        elif text == 'absLong':
-            self.absLong = text.lstrip('absLong')
-        elif text == 'absAlt':
-            self.absAlt = text.lstrip('absAlt')
-            self.signal_new_coordinate(self.absLat, self.absLong)
         print(text)
+        if 'relLat' in text:
+            self.relLat = text.lstrip('relLat')
+        elif 'relLong' in text:
+            self.relLong = text.lstrip('relLong')
+        elif 'relAlt' in text:
+            self.relAlt = text.lstrip('relAlt')
+            self.signal_new_rel_coordinate(self.relLat, self.relLong, self.relAlt)
+        elif 'absLat' in text:
+            self.absLat = text.lstrip('absLat')
+        elif 'absLong' in text:
+            self.absLong = text.lstrip('absLong')
+        elif 'absAlt' in text:
+            self.absAlt = text.lstrip('absAlt')
+            self.signal_new_abs_coordinate(self.absLat, self.absLong, self.absAlt)
 
-    def signal_new_coordinate(self, lat, long):
-        print("new coordinate is: " + str(lat), ", ", str(long))
-        self.newCoordinate.emit(lat, long)
+    def signal_new_abs_coordinate(self, lat, long, alt):
+        print("new abs coordinate is: " + str(lat), ", ", str(long), ", ", str(alt))
+        float_lat = float(lat)
+        float_long = float(long)
+        float_alt = float(alt)
+        int_alt = int(float_alt)
+        self.newAbsCoordinate.emit(float_lat, float_long, int_alt)
+
+    def signal_new_rel_coordinate(self, lat, long, alt):
+        print("new rel coordinate is: " + str(lat), ", ", str(long), ", ", str(alt))
+        float_lat = float(lat)
+        float_long = float(long)
+        float_alt = float(alt)
+        int_alt = int(float_alt)
+        self.newRelCoordinate.emit(float_lat, float_long, int_alt)
 
 
 app = QGuiApplication([])
@@ -79,5 +92,4 @@ view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)
 view.show()
 qml_window = view.rootObject()
-gui.signal_new_coordinate(52.12478, -106.65946)
 app.exec_()

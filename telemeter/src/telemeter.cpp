@@ -17,7 +17,7 @@ enum State {
   TEST = 6
 };
 
-enum State curr_state = TEST;
+enum State curr_state = IDLE;
 
 byte stateChange[1] = {0x00};
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
@@ -440,8 +440,6 @@ void setup() {
   // startTimer(10); // In Hz
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
-  if(DEBUG) while (!Serial) {;} // Wait for serial channel to open
 
   analogReadResolution(12);
   pinMode(A0, INPUT);
