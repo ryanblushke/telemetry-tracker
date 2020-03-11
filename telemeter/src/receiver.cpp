@@ -46,6 +46,8 @@ enum State {
   TEST = 6
 };
 
+enum State curr_state = IDLE;
+
 void updateLocation() {
   GPS_lat_cur = GPS_lat_abs + GPS_lat_rel;
   GPS_lng_cur = GPS_lng_abs + GPS_lng_rel;
@@ -107,9 +109,6 @@ void decodeRelativePacket() {
   }
   updateLocation();
 }
-
-enum State curr_state = IDLE;
-
 
 enum State sleepHandler(void) {
   return SLEEP;
