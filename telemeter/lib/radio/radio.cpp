@@ -4,6 +4,8 @@
 
 #include "radio.h"
 
+// uint32_t ts = 0;
+
 byte Radio::readbyte(byte addr) { // Reads one byte at address
   digitalWrite(slaveSelectPin, LOW); // Start transaction
   SPI.transfer(addr); // send address, for reading
@@ -108,12 +110,13 @@ void Radio::tx(byte data[], int dataLen) {
   writeFIFO(data, dataLen);//Write PayloadLength bytes to the FIFO (RegFifo)
   good &= writemasked(0x01, 0b00000011, 0b00000111); //set mode to TX
   byte stat = 0;
-  //uint32_t ts = millis();
+  // ts = millis();
   do {
     stat = readbyte(0x12);
     // bit 3 is TxDone, wait until this is true
   } while (0b00001000 != (stat & 0b00001000));
-  //Serial.println(millis() - ts);
+  // Serial.print("tx: ");
+  // Serial.println(millis() - ts);
   // Serial.println("Trasmission Done.");
   writemasked(0x12, 0xFF, 0xFF);  // Clear the flags
 }
@@ -156,6 +159,9 @@ bool Radio::dataready() { // Return true when message is ready
                      0b01000000)) { // bit 6 is RxDone, wait until this is true
     return false; // if bit not 1;
   }
+  // Serial.print("rx: ");
+  // Serial.println(millis() - ts);
+  // ts = millis();
   // print("Stat:", "{0:b}".format(stat))
   if (0b00100000 == (stat & 0b00100000)) { // bit 5 is PayloadCrcError
     writemasked(0x12, 0xFF, 0xFF);  // Clear the flags

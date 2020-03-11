@@ -5,7 +5,7 @@
 #define DEBUG true
 #define FLASH false
 #define NOLOCK true
-#define NOMOVE true
+#define NOGPS true
 
 enum State {
   SLEEP = 0,
@@ -233,7 +233,7 @@ enum State armedHandler(void) {
   //Both of the devices must be set to the idle state in the current
   //configuration
   if(DEBUG) Serial.println("Waiting for GPS lock");
-  if(NOMOVE || gps.location.lat() != 0) {
+  if(NOGPS || gps.location.lat() != 0) {
     //Transmit absolute position to the receiver
     updateAbsoluteLocation();
     encodeAbsolutePacket();
@@ -255,7 +255,7 @@ enum State armedHandler(void) {
 
     //Wait for movement to move into active
     imu.queryData();
-    while((!NOMOVE) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
+    while((!NOGPS) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
         || (imu.AZ < -20 || imu.AZ > 20))) {
           if(DEBUG) Serial.println("Waiting for movement");
         };
