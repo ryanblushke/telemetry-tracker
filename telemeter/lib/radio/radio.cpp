@@ -30,8 +30,8 @@ bool Radio::TXradioinit(int byteLen) {
   bool good = true;
   // RegOpMode (0x01) - Mode=000(SLEEP)
   good &= writemasked(0x01, 0b00000000, 0b00000111);
-  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=1
-  good &= writemasked(0x01, 0b10001000, 0b11001000);
+  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=0
+  good &= writemasked(0x01, 0b10000000, 0b11001000);
   // RegFrMsb (0x06) - Frf(23:16)=0xE4
   good &= writemasked(0x06, 0xE4, 0xFF);
   // RegFrMid (0x07) - Frf(15:8)=0xC0
@@ -44,8 +44,8 @@ bool Radio::TXradioinit(int byteLen) {
   good &= writemasked(0x09, 0b10001111, 0b10001111);
   // RegOcp (0x0B) - OcpOn=0
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
-  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
-  good &= writemasked(0x1D, 0b01111001, 0b11111111);
+  // RegModemConfig1 (0x1D) - Bw=500kHz, CR=4/8, ImplicitHeaderModeOn=1
+  good &= writemasked(0x1D, 0b10011001, 0b11111111);
   // RegModemConfig2 (0x1E) - SF=9, RxPayloadCrcOn=1, SymbTimeoutMSB=0
   good &= writemasked(0x1E, 0b10010100, 0b11111111);
   // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
@@ -64,8 +64,8 @@ bool Radio::RXradioinit(int byteLen) {
   bool good = true;
   // RegOpMode (0x01) - Mode=000(SLEEP)
   good &= writemasked(0x01, 0b00000000, 0b00000111);
-  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=1
-  good &= writemasked(0x01, 0b10001000, 0b11001000);
+  // RegOpMode (0x01) - LongRangeMode=1, AccessSharedReg=0, LowFrequencyModeOn=0
+  good &= writemasked(0x01, 0b10000000, 0b11001000);
   // RegFrMsb (0x06) - Frf(23:16)=0xE4
   good &= writemasked(0x06, 0xE4, 0xFF);
   // RegFrMid (0x07) - Frf(15:8)=0xC0
@@ -78,8 +78,8 @@ bool Radio::RXradioinit(int byteLen) {
   good &= writemasked(0x09, 0b10001111, 0b10001111);
   // RegOcp (0x0B) - OcpOn=0
   good &= writemasked(0x0B, 0b00000000, 0b00100000);
-  // RegModemConfig1 (0x1D) - Bw=125khz, CR=4/8, ImplicitHeaderModeOn=1
-  good &= writemasked(0x1D, 0b01111001, 0b11111111);
+  // RegModemConfig1 (0x1D) - Bw=500kHz, CR=4/8, ImplicitHeaderModeOn=1
+  good &= writemasked(0x1D, 0b10011001, 0b11111111);
   // RegModemConfig2 (0x1E) - SF=9, RxPayloadCrcOn=1, SymbTimeoutMSB=0
   good &= writemasked(0x1E, 0b10010100, 0b11111111);
   // RegModemConfig3 (0x26) - LowDataRateOptimize=0, AgcAutoOn=1
@@ -168,12 +168,18 @@ bool Radio::dataready() { // Return true when message is ready
 }
 
 int Radio::rssi() {
-  byte raw = readbyte(0x1A);
-  return (-137 + raw);
+  int8_t snr = (int8_t)readbyte(0x19) / 4;
+  int rssi = (int)readbyte(0x1A);
+  // Adjust the RSSI, datasheet page 87
+  if (snr < 0)
+    rssi = rssi + snr;
+  else
+    rssi = rssi * 16 / 15;
+  rssi -= 157;
+  return rssi;
 }
 
 float Radio::snr() {
-  byte raw = readbyte(0x19);
-  raw = raw & 0b01111111;
-  return (raw / 4.0);
+  int8_t snr = (int8_t)readbyte(0x19);
+  return (snr / 4.0);
 }
