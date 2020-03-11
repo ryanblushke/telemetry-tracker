@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot, QIODevice
 from PyQt5.QtSerialPort import QSerialPort
+from PyQt5.QtChart import QChartView, QSplineSeries
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQuick import QQuickView
 import sys
@@ -92,4 +93,9 @@ view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)
 view.show()
 qml_window = view.rootObject()
+chart = QChartView(qml_window)
+spline = QSplineSeries(chart)
+spline.append(0, 1)
+spline.append(1, 2)
+spline.append(2, 3)
 app.exec_()
