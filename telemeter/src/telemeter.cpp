@@ -79,12 +79,6 @@ void updateAbsoluteLocation() {
     GPS_lat_abs = -1799999999;
     GPS_lng_abs = -1799999999;
     altitude_abs = -9850;
-    Serial.print("GPS_lat_abs negative (1 = true): ");
-    Serial.println(GPS_lat_abs < -1);
-    Serial.print("GPS_lng_abs negative (1 = true): ");
-    Serial.println(GPS_lng_abs < -1);
-    Serial.print("altitude_abs negative (1 = true): ");
-    Serial.println(altitude_abs < -1);
     Serial.print("GPS_lat_abs: ");
     Serial.println(GPS_lat_abs);
     Serial.print("GPS_lng_abs: ");
