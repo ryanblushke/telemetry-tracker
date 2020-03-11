@@ -295,10 +295,6 @@ void setup() {
 
 
 void loop() {
-  if (DEBUG) {
-    //Serial.print("Current state: ");
-    //Serial.println(curr_state);
-  }
   switch (curr_state) {
   case SLEEP:
     curr_state = sleepHandler();

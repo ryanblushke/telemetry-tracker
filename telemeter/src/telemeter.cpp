@@ -3,9 +3,12 @@
 #include "telemeter.h"
 
 #define DEBUG true
+#define UPDATE false
+#define SEND false
 #define FLASH false
 #define NOLOCK true
 #define NOGPS true
+#define TIMEOUT 10000
 
 enum State {
   SLEEP = 0,
@@ -47,7 +50,7 @@ uint32_t altitude_abs = 0;
 int32_t GPS_lat_abs = 0;
 int32_t GPS_lng_abs = 0;
 
-int32_t timeout = 0;
+unsigned long timeout = 0;
 int32_t initTimeout = 0;
 int counter = 0;
 const int chipSelect = 8;
@@ -69,21 +72,25 @@ void fastBlink() {
 }
 
 void updateAbsoluteLocation() {
-  GPS_lat_abs_flt = gps.location.lat() * 10000000;
-  GPS_lng_abs_flt = gps.location.lng() * 10000000;
-  alt_abs_flt = gps.altitude.meters();
-  GPS_lat_abs = GPS_lat_abs_flt;
-  GPS_lng_abs = GPS_lng_abs_flt;
-  altitude_abs = alt_abs_flt;
-  if (DEBUG) {
+  if (NOGPS) {
     GPS_lat_abs = -1799999999;
     GPS_lng_abs = -1799999999;
     altitude_abs = -9850;
-    Serial.print("GPS_lat_abs: ");
+  } else {
+    GPS_lat_abs_flt = gps.location.lat() * 10000000;
+    GPS_lng_abs_flt = gps.location.lng() * 10000000;
+    alt_abs_flt = gps.altitude.meters();
+    GPS_lat_abs = GPS_lat_abs_flt;
+    GPS_lng_abs = GPS_lng_abs_flt;
+    altitude_abs = alt_abs_flt;
+  }
+
+  if (UPDATE) {
+    Serial.print("(int32_t) Absolute Latitude: ");
     Serial.println(GPS_lat_abs);
-    Serial.print("GPS_lng_abs: ");
+    Serial.print("(int32_t) Absolute Longitude: ");
     Serial.println(GPS_lng_abs);
-    Serial.print("altitude_abs: ");
+    Serial.print("(uint32_t) Absolute Altitude: ");
     Serial.println(altitude_abs);
   }
 }
@@ -117,25 +124,28 @@ void encodeAbsolutePacket() {
 }
 
 void updateRelativeLocation() {
-  GPS_lat_rel_flt = (gps.location.lat() - GPS_lat_abs) * 100000;
-  GPS_lng_rel_flt = (gps.location.lng() - GPS_lng_abs) * 100000;
-  alt_rel_flt = gps.altitude.meters() - altitude_abs;
-  GPS_lat_rel = GPS_lat_rel_flt;
-  GPS_lng_rel = GPS_lng_rel_flt;
-  altitude_rel = alt_rel_flt;
-
-  if (DEBUG) {
+  if (NOGPS) {
     GPS_lat_rel_flt = .009 * 100000;
     GPS_lng_rel_flt = .009 * 100000;
     alt_rel_flt = 900;
     GPS_lat_rel = GPS_lat_rel_flt;
     GPS_lng_rel = GPS_lng_rel_flt;
     altitude_rel = alt_rel_flt;
-    Serial.print("(uint16_t) Relative Latitude: ");
+  } else {
+    GPS_lat_rel_flt = (gps.location.lat() - GPS_lat_abs) * 100000;
+    GPS_lng_rel_flt = (gps.location.lng() - GPS_lng_abs) * 100000;
+    alt_rel_flt = gps.altitude.meters() - altitude_abs;
+    GPS_lat_rel = GPS_lat_rel_flt;
+    GPS_lng_rel = GPS_lng_rel_flt;
+    altitude_rel = alt_rel_flt;
+  }
+
+  if (UPDATE) {
+    Serial.print("(int16_t) Relative Latitude: ");
     Serial.println(GPS_lat_rel);
-    Serial.print("(uint16_t) Relative Longitude: ");
+    Serial.print("(int16_t) Relative Longitude: ");
     Serial.println(GPS_lng_rel);
-    Serial.print("(uint16_t) Relative Altitude: ");
+    Serial.print("(int16_t) Relative Altitude: ");
     Serial.println(altitude_rel);
   }
 }
@@ -232,6 +242,7 @@ enum State armedHandler(void) {
   //The current setup works, but is not the most reliable
   //Both of the devices must be set to the idle state in the current
   //configuration
+  if (initTimeout == 1) initTimeout = 0;
   if(DEBUG) Serial.println("Waiting for GPS lock");
   if(NOGPS || gps.location.lat() != 0) {
     //Transmit absolute position to the receiver
@@ -258,40 +269,41 @@ enum State armedHandler(void) {
     while((!NOGPS) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
         || (imu.AZ < -20 || imu.AZ > 20))) {
           if(DEBUG) Serial.println("Waiting for movement");
-        };
+        }
       return ACTIVE;
   }
   return ARMED;
 }
 
 enum State activeHandler(void) {
-  if(initTimeout == 1){
-    timeout = millis();
+  if (initTimeout == 0) {
+    timeout = millis() + TIMEOUT;
+    initTimeout = 1;
   }
   updateRelativeLocation();
   encodeRelativePacket();
-  if (DEBUG) Serial.println("Starting send");
+  if (SEND) Serial.println("Starting send");
   radio.tx(data, 5);
-  if (DEBUG) Serial.println("Done send");
+  if (SEND) Serial.println("Done send");
   imu.queryData();
   //TODO: UNCOMMENT
   //logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
   && (imu.AZ > -20 && imu.AZ < 20)) {
-    timeout = timeout - millis();
     if (DEBUG) {
       Serial.print("Timeout: ");
       Serial.println(timeout);
     }
-    if (timeout <= 0) {
+    Serial.print("timeout - millis(): ");
+    Serial.println(timeout - millis());
+
+    if (timeout - millis() > timeout) {
       if (DEBUG) Serial.println("Switched state to LANDED");
-      initTimeout = 1;
-      //TODO: Set to LANDED
-      return ACTIVE;
+      return LANDED;
     }
   } else {
     if (DEBUG) Serial.println("timeout reset");
-    timeout = millis() + 500;
+    timeout = millis() + TIMEOUT;
   }
   return ACTIVE;
 }
@@ -301,7 +313,7 @@ enum State landedHandler(void) {
   updateRelativeLocation();
   encodeRelativePacket();
   radio.tx(data, 5);
-  delay(10);
+  delay(1000);
   return LANDED;
 }
 
@@ -317,10 +329,10 @@ enum State testHandler(void) {
   updateRelativeLocation();
   encodeRelativePacket();
   //encodeAbsolutePacket();
-  if (DEBUG) Serial.println("Starting send");
+  if (SEND) Serial.println("Starting send");
   radio.tx(data, 5);
   //radio.tx(absData, 10);
-  if (DEBUG) Serial.println("Done send");
+  if (SEND) Serial.println("Done send");
   Serial.println(millis() - ts);
   return TEST;
 }
@@ -470,11 +482,6 @@ void setup() {
 }
 
 void loop() {
-  if (DEBUG) {
-    //Serial.print("Current state: ");
-    //Serial.println(curr_state);
-  }
-
   switch (curr_state) {
   case SLEEP:
     curr_state = sleepHandler();
