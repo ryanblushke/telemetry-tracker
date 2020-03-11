@@ -122,7 +122,8 @@ enum State idleHandler(void) {
     byteMode = 1;
   }
   //TODO: If statement comparing msg to decide if armed
-  String msg = Serial.readString();
+  //String msg = Serial.readString();
+  String msg = "ARM";
   if(msg == "ARM") {
     for(int i = 0; i < 10; i++){
       if (DEBUG) Serial.println("Transmitting to arm");
