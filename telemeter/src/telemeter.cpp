@@ -36,9 +36,9 @@ float GPS_lng_rel_flt = 0;
 float alt_rel_flt = 0;
 
 //Intermediate absolute float values
-float GPS_lat_abs_flt = 0;
-float GPS_lng_abs_flt = 0;
-float alt_abs_flt = 0;
+double GPS_lat_abs_flt = 0;
+double GPS_lng_abs_flt = 0;
+double alt_abs_flt = 0;
 
 //Final relative int16_t values
 int16_t altitude_rel = 0;
