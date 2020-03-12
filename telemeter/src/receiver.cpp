@@ -22,6 +22,12 @@ int32_t GPS_lat_abs_undiv = 0;
 int32_t GPS_lng_abs_undiv = 0;
 int16_t alt_abs = 0;
 
+// State print flags
+int idleStatePrinted = 0;
+int armedStatePrinted = 0;
+int activeStatePrinted = 0;
+
+
 Radio radio;
 
 enum State {
@@ -89,6 +95,10 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
+  if(idleStatePrinted == 0){
+    Serial.println("state:idle");
+    idleStatePrinted = 1;
+  }
   if(rxMode != 0 || byteMode != 0){
     radio.TXradioinit(1);
     rxMode = 0;
@@ -107,6 +117,10 @@ enum State idleHandler(void) {
 }
 
 enum State armedHandler(void) {
+  if(armedStatePrinted == 0){
+    Serial.println("state:armed");
+    armedStatePrinted = 1;
+  }
   if(rxMode != 1 || byteMode != 10){
     radio.RXradioinit(10);
     rxMode = 1;
@@ -138,6 +152,10 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
+  if(activeStatePrinted == 0){
+    Serial.println("state:active");
+    activeStatePrinted = 1;
+  }
   if(rxMode != 1 || byteMode != 5){
     radio.RXradioinit(5);
     rxMode = 1;
