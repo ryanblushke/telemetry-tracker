@@ -11,18 +11,16 @@ byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 int rxMode = 0;
 int byteMode = 0;
 
-
 // Relative data packet variables
 uint8_t header = 0;
 int16_t GPS_lat_rel_undiv = 0;
 int16_t GPS_lng_rel_undiv = 0;
-int16_t altitude_rel_undiv = 0;
-float altitude_rel = 0;
+int16_t alt_rel = 0;
 
 // Absolute data packet variables
 int32_t GPS_lat_abs_undiv = 0;
 int32_t GPS_lng_abs_undiv = 0;
-int16_t altitude_abs = 0;
+int16_t alt_abs = 0;
 
 Radio radio;
 
@@ -48,7 +46,7 @@ void decodeAbsolutePacket() {
   if (DEBUG) Serial.println("Latitude Absolute before div: ");
   if (DEBUG) Serial.println(GPS_lat_abs_undiv);
 
-  //Longtitude Decode
+  //Longitude Decode
   GPS_lng_abs_undiv = ((data[4] & 0x7F) << 24) | (data[5] << 16) |
                       (data[6] << 8) | data[7];
   if ((data[4] & 0x08) == 0x80) {
@@ -59,9 +57,9 @@ void decodeAbsolutePacket() {
   if (DEBUG) Serial.println(GPS_lng_abs_undiv);
 
   //Altitude Decode
-  altitude_abs = (data[8] << 6);
-  altitude_abs |= (data[9] >> 2);
-  if (DEBUG) Serial.println(altitude_abs);
+  alt_abs = (data[8] << 6);
+  alt_abs |= (data[9] >> 2);
+  if (DEBUG) Serial.println(alt_abs);
 }
 
 void decodeRelativePacket() {
@@ -73,16 +71,16 @@ void decodeRelativePacket() {
     GPS_lat_rel_undiv = GPS_lat_rel_undiv * -1;
   }
 
-  //Longtitude Decode
+  //Longitude Decode
   GPS_lng_rel_undiv = ((data[1] & 0x01) << 9) | (data[2] << 1) | ((
                         data[3] & 0x10) >> 7);
   if ((data[1] & 0x02) == 0x02) {
     GPS_lng_rel_undiv = GPS_lng_rel_undiv * -1;
   }
 
-  altitude_rel = ((data[3] & 0x3F) << 4) | ((data[4] & 0xF0) >> 4);
+  alt_rel = ((data[3] & 0x3F) << 4) | ((data[4] & 0xF0) >> 4);
   if ((data[3] & 0x40) == 0x40) {
-    altitude_rel = altitude_rel * -1;
+    alt_rel = alt_rel * -1;
   }
 }
 
@@ -126,7 +124,7 @@ enum State armedHandler(void) {
     absLong.concat(GPS_lng_abs_undiv);
     Serial.println(absLong);
     String absAlt = "absAlt";
-    absAlt.concat(altitude_abs);
+    absAlt.concat(alt_abs);
     Serial.println(absAlt);
     if (DEBUG) {
       Serial.print("RSSI: ");
@@ -156,7 +154,7 @@ enum State activeHandler(void) {
     relLong.concat(GPS_lng_rel_undiv);
     Serial.println(relLong);
     String relAlt = "relAlt";
-    relAlt.concat(altitude_rel);
+    relAlt.concat(alt_rel);
     Serial.println(relAlt);
     if (DEBUG) {
       Serial.print("RSSI: ");
