@@ -17,22 +17,12 @@ uint8_t header = 0;
 int16_t GPS_lat_rel_undiv = 0;
 int16_t GPS_lng_rel_undiv = 0;
 int16_t altitude_rel_undiv = 0;
-float GPS_lat_rel = 0;
-float GPS_lng_rel = 0;
 float altitude_rel = 0;
 
 // Absolute data packet variables
 int32_t GPS_lat_abs_undiv = 0;
 int32_t GPS_lng_abs_undiv = 0;
-float GPS_lat_abs = 0;
-float GPS_lng_abs = 0;
 int16_t altitude_abs = 0;
-
-// Current Location Variables
-float GPS_lat_cur = 0;
-float GPS_lng_cur = 0;
-float altitude_cur = 0;
-
 
 Radio radio;
 
@@ -48,12 +38,6 @@ enum State {
 
 enum State curr_state = IDLE;
 
-void updateLocation() {
-  GPS_lat_cur = GPS_lat_abs + GPS_lat_rel;
-  GPS_lng_cur = GPS_lng_abs + GPS_lng_rel;
-  altitude_cur = altitude_abs + altitude_rel;
-}
-
 void decodeAbsolutePacket() {
   //Latitude Decode
   GPS_lat_abs_undiv = ((data[0] & 0x7F) << 24) | (data[1] << 16) |
@@ -62,10 +46,8 @@ void decodeAbsolutePacket() {
     GPS_lat_abs_undiv = GPS_lat_abs_undiv * -1;
     if (DEBUG) Serial.println("***NEGATIVE_LAT***");
   }
-  GPS_lat_abs = GPS_lat_abs_undiv;
   if (DEBUG) Serial.println("Latitude Absolute before div: ");
   if (DEBUG) Serial.println(GPS_lat_abs_undiv);
-  GPS_lat_abs = GPS_lat_abs_undiv / (float)10000000;
 
   //Longtitude Decode
   GPS_lng_abs_undiv = ((data[4] & 0x7F) << 24) | (data[5] << 16) |
@@ -74,10 +56,8 @@ void decodeAbsolutePacket() {
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
     if (DEBUG) Serial.println("***NEGATIVE_LNG***");
   }
-  GPS_lng_abs = GPS_lng_abs_undiv;
   if (DEBUG) Serial.println("Longitude Absolute before div: ");
   if (DEBUG) Serial.println(GPS_lng_abs_undiv);
-  GPS_lng_abs = GPS_lng_abs_undiv / (float)10000000;
 
   //Altitude Decode
   altitude_abs = (data[8] << 6);
@@ -93,8 +73,6 @@ void decodeRelativePacket() {
   if ((data[0] & 0x10) == 0x10) {
     GPS_lat_rel_undiv = GPS_lat_rel_undiv * -1;
   }
-  GPS_lat_rel = GPS_lat_rel_undiv;
-  GPS_lat_rel = GPS_lat_rel / 100000;
 
   //Longtitude Decode
   GPS_lng_rel_undiv = ((data[1] & 0x01) << 9) | (data[2] << 1) | ((
@@ -102,14 +80,11 @@ void decodeRelativePacket() {
   if ((data[1] & 0x02) == 0x02) {
     GPS_lng_rel_undiv = GPS_lng_rel_undiv * -1;
   }
-  GPS_lng_rel = GPS_lng_rel_undiv;
-  GPS_lng_rel = GPS_lng_rel / 100000;
 
   altitude_rel = ((data[3] & 0x3F) << 4) | ((data[4] & 0xF0) >> 4);
   if ((data[3] & 0x40) == 0x40) {
     altitude_rel = altitude_rel * -1;
   }
-  updateLocation();
 }
 
 enum State sleepHandler(void) {
@@ -255,22 +230,6 @@ enum State testHandler(void){
     }
     Serial.println();
     decodeRelativePacket();
-    // decodeAbsolutePacket();
-    Serial.println();
-    Serial.print("Latitude Relative: ");
-    Serial.println(GPS_lat_rel, 5);
-    Serial.print("Longtitude Relative: ");
-    Serial.println(GPS_lng_rel, 5);
-    Serial.print("Altitude Relative: ");
-    Serial.println(altitude_rel);
-    Serial.println();
-    // Serial.println();
-    // Serial.print("Latitude Absolute: ");
-    // Serial.println(GPS_lat_abs);
-    // Serial.print("Longitude Absolute: ");
-    // Serial.println(GPS_lng_abs, 8);
-    // Serial.print("Altitude Absolute: ");
-    // Serial.println(altitude_abs);
     Serial.println();
     Serial.print("RSSI: ");
     Serial.println(radio.rssi());
