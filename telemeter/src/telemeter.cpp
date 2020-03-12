@@ -9,6 +9,8 @@
 #define FLASH false
 #define NOGPS true
 #define TIMEOUT 1000
+#define VBATPIN A7
+#define MAXVOLT 4.2
 
 enum State {
   SLEEP = 0,
@@ -25,6 +27,7 @@ enum State curr_state = IDLE;
 byte stateChange[1] = {0x00};
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 byte absData[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
 
 //Flag for RX TX MODE
 int rxMode = 0;
@@ -165,6 +168,13 @@ void encodeRelativePacket() {
   uint8_t altitude_rel_top;
   uint8_t altitude_rel_bot;
 
+  if(curr_state == LANDED){
+    data[0] = 0xE0;
+  }
+  else{
+    data[0] = 0x00;
+  }
+
   if (GPS_lat_rel < 0) {
     GPS_lat_rel = GPS_lat_rel * -1;
     GPS_lat_rel_top = (GPS_lat_rel & 0x03C0) >> 6;
@@ -217,7 +227,18 @@ void encodeRelativePacket() {
     data[3] |= altitude_rel_top;
     data[4] = altitude_rel_bot << 4;
   }
-  // TODO: SET BATTERY VOLTAGE IN LAST 4 BITS
+
+  float measuredvbat = analogRead(VBATPIN);
+  Serial.print("measuredvbat: " ); Serial.println(measuredvbat);
+
+  measuredvbat *= 2;    // we divided by 2, so multiply back
+  measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
+  measuredvbat /= 4096; // convert to voltage
+  Serial.print("VBat: " ); Serial.println(measuredvbat);
+  float voltDif = MAXVOLT - measuredvbat;
+  uint8_t volt = 15 - voltDif/0.05625;
+  data[4] &= ~0x0F;
+  data[4] |= 0x0F & volt;
 }
 
 enum State sleepHandler(void) {
@@ -457,8 +478,6 @@ void setup() {
 
   analogReadResolution(12);
   pinMode(A0, INPUT);
-  REG_ADC_CTRLB = 0x0110; // PRESCALER=0x1, RESSEL=0x1 - 16 bit result
-  REG_ADC_AVGCTRL = 0x0A; // Accumulate 1024 samples per read
 
   Serial.println("Starting");
   if (FLASH) {

@@ -22,10 +22,14 @@ int32_t GPS_lat_abs_undiv = 0;
 int32_t GPS_lng_abs_undiv = 0;
 int16_t alt_abs = 0;
 
+// Battery voltage
+int8_t battVolt = 0;
+
 // State print flags
 int idleStatePrinted = 0;
 int armedStatePrinted = 0;
 int activeStatePrinted = 0;
+int landedStatePrinted = 0;
 
 
 Radio radio;
@@ -88,6 +92,7 @@ void decodeRelativePacket() {
   if ((data[3] & 0x40) == 0x40) {
     alt_rel = alt_rel * -1;
   }
+  battVolt = data[4] & 0x0F;
 }
 
 enum State sleepHandler(void) {
@@ -96,7 +101,7 @@ enum State sleepHandler(void) {
 
 enum State idleHandler(void) {
   if(idleStatePrinted == 0){
-    Serial.println("state:idle");
+    Serial.println("STATECHANGE:IDLE");
     idleStatePrinted = 1;
   }
   if(rxMode != 0 || byteMode != 0){
@@ -118,7 +123,7 @@ enum State idleHandler(void) {
 
 enum State armedHandler(void) {
   if(armedStatePrinted == 0){
-    Serial.println("state:armed");
+    Serial.println("STATECHANGE:ARMED");
     armedStatePrinted = 1;
   }
   if(rxMode != 1 || byteMode != 10){
@@ -140,6 +145,9 @@ enum State armedHandler(void) {
     String absAlt = "absAlt";
     absAlt.concat(alt_abs);
     Serial.println(absAlt);
+    String battVoltStr = "battVolt";
+    battVoltStr.concat(battVolt);
+    Serial.println(battVoltStr);
     if (DEBUG) {
       Serial.print("RSSI: ");
       Serial.println(radio.rssi());
@@ -153,7 +161,7 @@ enum State armedHandler(void) {
 
 enum State activeHandler(void) {
   if(activeStatePrinted == 0){
-    Serial.println("state:active");
+    Serial.println("STATECHANGE:ACTIVE");
     activeStatePrinted = 1;
   }
   if(rxMode != 1 || byteMode != 5){
@@ -161,6 +169,12 @@ enum State activeHandler(void) {
     rxMode = 1;
     byteMode = 5;
     if (DEBUG) Serial.println("Set to rx for 5 bytes");
+  }
+  if(landedStatePrinted == 0){
+    if(header == 7) {
+      Serial.println("STATECHANGE:LANDED");
+      landedStatePrinted = 1;
+    }
   }
   if (radio.dataready()) {
     radio.rx(data, 5);
