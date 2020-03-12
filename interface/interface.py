@@ -13,6 +13,7 @@ class Gui(QObject):
     """
 
     changeState = pyqtSignal(str)
+    stateChanged = pyqtSignal(str, arguments=['tele_state'])
     newAbsCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
     newRelCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
 
@@ -32,6 +33,12 @@ class Gui(QObject):
         self.rel_lat = 0  # type: float
         self.rel_long = 0  # type: float
         self.rel_alt = 0  # type: float
+        self.cur_lat = 0  # type: float
+        self.cur_long = 0  # type: float
+        self.cur_alt = 0  # type: float
+        self.prev_lat = 0  # type: float
+        self.prev_long = 0  # type: float
+        self.prev_alt = 0  # type: float
 
     def connect_signals(self):
         self.changeState.connect(self.set_state)
@@ -61,6 +68,11 @@ class Gui(QObject):
         elif 'absAlt' in text:
             self.abs_alt = float(text.lstrip('absAlt'))
             self.signal_new_abs_coordinate()
+        elif 'STATECHANGE:' in text:
+            state = text.lstrip('STATECHANGE')
+            state = state.lstrip(':')
+            print("strip: " + state + "\n")
+            self.signal_state_changed(state)
 
     def signal_new_abs_coordinate(self):
         print("new abs undiv coordinate is: " + str(self.abs_lat), ", ", str(self.abs_long), ", ", str(self.abs_alt))
@@ -75,8 +87,20 @@ class Gui(QObject):
         self.rel_lat = self.rel_lat / 10000000
         self.rel_long = self.rel_long / 10000000
         int_alt = int(self.rel_alt)
-        print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
-        self.newRelCoordinate.emit(self.abs_lat + self.rel_lat, self.abs_long + self.rel_long, int(self.abs_alt) + int_alt)
+        self.cur_lat = self.abs_lat + self.rel_lat
+        self.cur_long = self.abs_long + self.rel_long
+        self.cur_alt = int(self.abs_alt) + int_alt
+
+        if not (self.cur_lat - self.prev_lat == 0 and self.cur_long - self.prev_long == 0 and self.cur_alt - self.prev_alt == 0):
+            self.prev_lat = self.abs_lat + self.rel_lat
+            self.prev_long = self.abs_long + self.rel_long
+            self.prev_alt = int(self.abs_alt) + int_alt
+            print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
+            self.newRelCoordinate.emit(self.prev_lat, self.prev_long, self.prev_alt)
+
+    def signal_state_changed(self, state):
+        print("state changed to: " + state + "\n")
+        self.stateChanged.emit(state)
 
 
 app = QApplication([])

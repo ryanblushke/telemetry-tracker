@@ -8,7 +8,7 @@
 #define PRINTTIME false
 #define FLASH false
 #define NOGPS true
-#define TIMEOUT 1000
+#define TIMEOUT 3000
 #define VBATPIN A7
 #define MAXVOLT 4.2
 

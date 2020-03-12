@@ -69,6 +69,20 @@ Rectangle {
                 }
             }
 
+            MapCircle {
+                id: currentLocation
+                center: QtPositioning.coordinate(52.1247, -106.6595)
+                radius: 2.0
+                color: 'red'
+                border.width: 3
+
+                Connections {
+                    target: gui
+                    onNewAbsCoordinate: currentLocation.center = QtPositioning.coordinate(lati, longi)
+                    onNewRelCoordinate: currentLocation.center = QtPositioning.coordinate(lati, longi)
+                }
+            }
+
             MapPolyline {
                 id: flightPath
                 line.width: 3
@@ -99,14 +113,19 @@ Rectangle {
 
     Text {
         id: element
-        x: 900
-        y: 240
+        x: 601
+        y: 8
         width: 100
         height: 32
-        text: qsTr("Current State:")
+        text: qsTr("Current State: IDLE")
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 12
+
+        Connections {
+            target: gui
+            onStateChanged: element.text = qsTr("Current State: ") + tele_state
+        }
     }
 
     ChartView {
