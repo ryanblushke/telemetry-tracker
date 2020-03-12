@@ -49,7 +49,7 @@ void decodeAbsolutePacket() {
   //Longitude Decode
   GPS_lng_abs_undiv = ((data[4] & 0x7F) << 24) | (data[5] << 16) |
                       (data[6] << 8) | data[7];
-  if ((data[4] & 0x08) == 0x80) {
+  if ((data[4] & 0x80) == 0x80) {
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
     if (DEBUG) Serial.println("***NEGATIVE_LNG***");
   }
