@@ -60,6 +60,7 @@ void decodeAbsolutePacket() {
                       (data[2] << 8) | data[3];
   if ((data[0] & 0x80) == 0x80) {
     GPS_lat_abs_undiv = GPS_lat_abs_undiv * -1;
+    if (DEBUG) Serial.println("***NEGATIVE_LAT***");
   }
   GPS_lat_abs = GPS_lat_abs_undiv;
   if (DEBUG) Serial.println("Latitude Absolute before div: ");
@@ -71,6 +72,7 @@ void decodeAbsolutePacket() {
                       (data[6] << 8) | data[7];
   if ((data[4] & 0x08) == 0x80) {
     GPS_lng_abs_undiv = GPS_lng_abs_undiv * -1;
+    if (DEBUG) Serial.println("***NEGATIVE_LNG***");
   }
   GPS_lng_abs = GPS_lng_abs_undiv;
   if (DEBUG) Serial.println("Longitude Absolute before div: ");
@@ -121,8 +123,7 @@ enum State idleHandler(void) {
     byteMode = 1;
   }
   //TODO: If statement comparing msg to decide if armed
-  //String msg = Serial.readString();
-  String msg = "ARM";
+  String msg = Serial.readString();
   if(msg == "ARM") {
     for(int i = 0; i < 10; i++){
       if (DEBUG) Serial.println("Transmitting to arm");
@@ -152,10 +153,10 @@ enum State armedHandler(void) {
     }
     decodeAbsolutePacket();
     String absLat = "absLat";
-    absLat.concat(GPS_lat_abs);
+    absLat.concat(GPS_lat_abs_undiv);
     Serial.println(absLat);
     String absLong = "absLong";
-    absLong.concat(GPS_lng_abs);
+    absLong.concat(GPS_lng_abs_undiv);
     Serial.println(absLong);
     String absAlt = "absAlt";
     absAlt.concat(altitude_abs);
@@ -190,10 +191,10 @@ enum State activeHandler(void) {
     // }
     decodeRelativePacket();
     String relLat = "relLat";
-    relLat.concat(GPS_lat_rel);
+    relLat.concat(GPS_lat_rel_undiv);
     Serial.println(relLat);
     String relLong = "relLong";
-    relLong.concat(GPS_lng_rel);
+    relLong.concat(GPS_lng_rel_undiv);
     Serial.println(relLong);
     String relAlt = "relAlt";
     relAlt.concat(altitude_rel);

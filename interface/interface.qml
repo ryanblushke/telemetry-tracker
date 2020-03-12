@@ -3,7 +3,6 @@ import QtQuick.Layouts 1.14
 import QtPositioning 5.14
 import QtLocation 5.14
 import QtQuick.Controls 2.13
-import QtCharts 2.3
 
 Rectangle {
     id: window
@@ -79,6 +78,11 @@ Rectangle {
                     onNewRelCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
                 }
             }
+
+            Connections {
+                target: gui
+                onNewAbsCoordinate: map.center = QtPositioning.coordinate(lati, longi)
+            }
         }
     }
 
@@ -101,36 +105,6 @@ Rectangle {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 12
-    }
-
-    ChartView {
-        id: spline
-        x: 572
-        y: 93
-        width: 300
-        height: 300
-        SplineSeries {
-            name: "SplineSeries"
-            XYPoint {
-                x: 0
-                y: 1
-            }
-
-            XYPoint {
-                x: 3
-                y: 4.3
-            }
-
-            XYPoint {
-                x: 5
-                y: 3.1
-            }
-
-            XYPoint {
-                x: 8
-                y: 5.8
-            }
-        }
     }
 }
 

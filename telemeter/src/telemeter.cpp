@@ -3,12 +3,12 @@
 #include "telemeter.h"
 
 #define DEBUG true
-#define UPDATE false
+#define UPDATE true
 #define SEND false
+#define PRINTTIME false
 #define FLASH false
-#define NOLOCK true
 #define NOGPS true
-#define TIMEOUT 10000
+#define TIMEOUT 1000
 
 enum State {
   SLEEP = 0,
@@ -73,9 +73,12 @@ void fastBlink() {
 
 void updateAbsoluteLocation() {
   if (NOGPS) {
-    GPS_lat_abs = -1799999999;
-    GPS_lng_abs = -1799999999;
-    altitude_abs = -9850;
+    GPS_lat_abs_flt = 52.1248 * 10000000;
+    GPS_lng_abs_flt = -106.6594 * 10000000;
+    alt_abs_flt = 900;
+    GPS_lat_abs = GPS_lat_abs_flt;
+    GPS_lng_abs = GPS_lng_abs_flt;
+    altitude_abs = alt_abs_flt;
   } else {
     GPS_lat_abs_flt = gps.location.lat() * 10000000;
     GPS_lng_abs_flt = gps.location.lng() * 10000000;
@@ -125,7 +128,7 @@ void encodeAbsolutePacket() {
 
 void updateRelativeLocation() {
   if (NOGPS) {
-    GPS_lat_rel_flt = .009 * 100000;
+    GPS_lat_rel_flt = -.009 * 100000;
     GPS_lng_rel_flt = .009 * 100000;
     alt_rel_flt = 900;
     GPS_lat_rel = GPS_lat_rel_flt;
@@ -290,19 +293,17 @@ enum State activeHandler(void) {
   //logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
   && (imu.AZ > -20 && imu.AZ < 20)) {
-    if (DEBUG) {
-      Serial.print("Timeout: ");
-      Serial.println(timeout);
+    if (PRINTTIME) {
+      Serial.print("timeout - millis(): ");
+      Serial.println(timeout - millis());
     }
-    Serial.print("timeout - millis(): ");
-    Serial.println(timeout - millis());
 
     if (timeout - millis() > timeout) {
       if (DEBUG) Serial.println("Switched state to LANDED");
       return LANDED;
     }
   } else {
-    if (DEBUG) Serial.println("timeout reset");
+    if (PRINTTIME) Serial.println("timeout reset");
     timeout = millis() + TIMEOUT;
   }
   return ACTIVE;
@@ -448,8 +449,6 @@ void setup() {
   flash.init();
   pressureSensor.init();
   radio.RXradioinit(1);
-
-  while (!Serial) {;} // Wait for serial channel to open
 
   // startTimer(10); // In Hz
   pinMode(LED_BUILTIN, OUTPUT);
