@@ -46,6 +46,7 @@ int16_t GPS_lat_rel = 0;
 int16_t GPS_lng_rel = 0;
 
 //Final relative int64_t values
+// TODO: altitude_abs should be int32_t with check for negative in encode
 uint32_t altitude_abs = 0;
 int32_t GPS_lat_abs = 0;
 int32_t GPS_lng_abs = 0;
