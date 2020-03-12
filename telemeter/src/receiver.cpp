@@ -31,7 +31,6 @@ enum State {
   IDLE = 1,
   ARMED = 2,
   ACTIVE = 3,
-  LANDED = 4,
   DATA_TRANSFER = 5,
   TEST = 6
 };
@@ -97,7 +96,6 @@ enum State idleHandler(void) {
     rxMode = 0;
     byteMode = 1;
   }
-  //TODO: If statement comparing msg to decide if armed
   String msg = Serial.readString();
   if(msg == "ARM") {
     for(int i = 0; i < 10; i++){
@@ -120,12 +118,6 @@ enum State armedHandler(void) {
 
   if(radio.dataready()) {
     radio.rx(data, 10);
-    if (DEBUG) {
-      for (int i = 0; i < 10; i++) {
-        Serial.print(data[i], HEX);
-        Serial.print(", ");
-      }
-    }
     decodeAbsolutePacket();
     String absLat = "absLat";
     absLat.concat(GPS_lat_abs_undiv);
@@ -148,8 +140,6 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
-  //TODO: Add logic to switch to LANDED technically dont even have to switch
-  //TODO: Decide where the absolute and relative items are combined
   if(rxMode != 1 || byteMode != 5){
     radio.RXradioinit(5);
     rxMode = 1;
@@ -158,12 +148,6 @@ enum State activeHandler(void) {
   }
   if (radio.dataready()) {
     radio.rx(data, 5);
-    // if (DEBUG) {
-    //   for (int i = 0; i < 5; i++) {
-    //     Serial.print(data[i], HEX);
-    //     Serial.print(", ");
-    //   }
-    // }
     decodeRelativePacket();
     String relLat = "relLat";
     relLat.concat(GPS_lat_rel_undiv);
@@ -184,34 +168,7 @@ enum State activeHandler(void) {
   return ACTIVE;
 }
 
-enum State landedHandler(void) {
-  if (radio.dataready()) {
-    radio.rx(data, 5);
-    // if (DEBUG) {
-    //   for (int i = 0; i < 5; i++) {
-    //     Serial.print(data[i], HEX);
-    //     Serial.print(", ");
-    //   }
-    // }
-    decodeRelativePacket();
-    String relLat = "relLat" + GPS_lat_rel_undiv;
-    Serial.println(relLat);
-    String relLong = "relLong" + GPS_lng_rel_undiv;
-    Serial.println(relLong);
-    String relAlt = "relAlt" + altitude_rel_undiv;
-    Serial.println(relAlt);
-    if (DEBUG) {
-      Serial.print("RSSI: ");
-      Serial.println(radio.rssi());
-      Serial.print("SNR: ");
-      Serial.println(radio.snr());
-    }
-  }
-  return LANDED;
-}
-
 enum State testHandler(void){
-
   if(rxMode != 1 || byteMode != 5){
     radio.RXradioinit(5);
     rxMode = 1;
@@ -267,9 +224,6 @@ void loop() {
     break;
   case ACTIVE:
     curr_state = activeHandler();
-    break;
-  case LANDED:
-    curr_state = landedHandler();
     break;
   case TEST:
     curr_state = testHandler();
