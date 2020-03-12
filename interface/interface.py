@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot, QIODevice
 from PyQt5.QtSerialPort import QSerialPort
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQuick import QQuickView
 import sys
 
@@ -76,10 +76,10 @@ class Gui(QObject):
         self.rel_long = self.rel_long / 10000000
         int_alt = int(self.rel_alt)
         print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
-        self.newAbsCoordinate.emit(self.abs_lat + self.rel_lat, self.abs_long + self.rel_long, int(self.abs_alt) + int_alt)
+        self.newRelCoordinate.emit(self.abs_lat + self.rel_lat, self.abs_long + self.rel_long, int(self.abs_alt) + int_alt)
 
 
-app = QGuiApplication([])
+app = QApplication([])
 view = QQuickView()
 view.setWidth(1024)
 view.setHeight(720)

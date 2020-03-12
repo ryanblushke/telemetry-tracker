@@ -3,6 +3,7 @@ import QtQuick.Layouts 1.14
 import QtPositioning 5.14
 import QtLocation 5.14
 import QtQuick.Controls 2.13
+import QtCharts 2.3
 
 Rectangle {
     id: window
@@ -106,6 +107,39 @@ Rectangle {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 12
+    }
+
+    ChartView {
+        id: spline
+        x: 554
+        y: 210
+        width: 300
+        height: 300
+        Connections {
+            target: gui
+            onNewAbsCoordinate: {
+                spline.removeAllSeries()
+                var test = spline.createSeries(SplineSeries, "Altitude vs Time", 0, alti)
+                var axis_x = spline.axisX(test)
+                var axis_y = spline.axisY(test)
+                test.append(0, alti)
+                axis_x.min = 0
+                axis_y.min = 0
+                axis_x.max = 1
+                axis_y.max = 9848
+            }
+            onNewRelCoordinate: {
+                var test = spline.series("Altitude vs Time")
+                if (test !== null) {
+                    var axis_x = spline.axisX(test)
+                    var axis_y = spline.axisY(test)
+                    axis_x.max = test.count + 1
+                    test.append(test.count, alti)
+                } else {
+                    element.text = "QTERROR"
+                }
+            }
+        }
     }
 }
 
