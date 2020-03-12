@@ -75,6 +75,7 @@ Rectangle {
 
                 Connections {
                     target: gui
+                    onNewAbsCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
                     onNewRelCoordinate: flightPath.insertCoordinate(flightPath.pathLength(), QtPositioning.coordinate(lati, longi))
                 }
             }

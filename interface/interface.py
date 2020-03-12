@@ -26,12 +26,12 @@ class Gui(QObject):
             self.serial.setBaudRate(QSerialPort.Baud115200, QSerialPort.AllDirections)
         else:
             raise IOError("Cannot connect to device on port")
-        self.absLat = 0  # type: float
-        self.absLong = 0  # type: float
-        self.absAlt = 0  # type: float
-        self.relLat = 0  # type: float
-        self.relLong = 0  # type: float
-        self.relAlt = 0  # type: float
+        self.abs_lat = 0  # type: float
+        self.abs_long = 0  # type: float
+        self.abs_alt = 0  # type: float
+        self.rel_lat = 0  # type: float
+        self.rel_long = 0  # type: float
+        self.rel_alt = 0  # type: float
 
     def connect_signals(self):
         self.changeState.connect(self.set_state)
@@ -48,37 +48,35 @@ class Gui(QObject):
         text = text.rstrip('\r\n')
         print(text)
         if 'relLat' in text:
-            self.relLat = text.lstrip('relLat')
+            self.rel_lat = float(text.lstrip('relLat'))
         elif 'relLong' in text:
-            self.relLong = text.lstrip('relLong')
+            self.rel_long = float(text.lstrip('relLong'))
         elif 'relAlt' in text:
-            self.relAlt = text.lstrip('relAlt')
-            self.signal_new_rel_coordinate(self.relLat, self.relLong, self.relAlt)
+            self.rel_alt = float(text.lstrip('relAlt'))
+            self.signal_new_rel_coordinate()
         elif 'absLat' in text:
-            self.absLat = text.lstrip('absLat')
+            self.abs_lat = float(text.lstrip('absLat'))
         elif 'absLong' in text:
-            self.absLong = text.lstrip('absLong')
+            self.abs_long = float(text.lstrip('absLong'))
         elif 'absAlt' in text:
-            self.absAlt = text.lstrip('absAlt')
-            self.signal_new_abs_coordinate(self.absLat, self.absLong, self.absAlt)
+            self.abs_alt = float(text.lstrip('absAlt'))
+            self.signal_new_abs_coordinate()
 
-    def signal_new_abs_coordinate(self, lat, long, alt):
-        print("new abs undiv coordinate is: " + str(lat), ", ", str(long), ", ", str(alt))
-        float_lat = float(lat) / 10000000
-        float_long = float(long) / 10000000
-        float_alt = float(alt)
-        int_alt = int(float_alt)
-        print("new abs div coordinate is: " + str(float_lat), ", ", str(float_long), ", ", str(int_alt))
-        self.newAbsCoordinate.emit(float_lat, float_long, int_alt)
+    def signal_new_abs_coordinate(self):
+        print("new abs undiv coordinate is: " + str(self.abs_lat), ", ", str(self.abs_long), ", ", str(self.abs_alt))
+        self.abs_lat = self.abs_lat / 10000000
+        self.abs_long = self.abs_long / 10000000
+        int_alt = int(self.abs_alt)
+        print("new abs div coordinate is: " + str(self.abs_lat), ", ", str(self.abs_long), ", ", str(int_alt))
+        self.newAbsCoordinate.emit(self.abs_lat, self.abs_long, int_alt)
 
-    def signal_new_rel_coordinate(self, lat, long, alt):
-        print("new rel undiv coordinate is: " + str(lat), ", ", str(long), ", ", str(alt))
-        float_lat = float(lat) / 100000
-        float_long = float(long) / 100000
-        float_alt = float(alt)
-        int_alt = int(float_alt)
-        print("new rel div coordinate is: " + str(float_lat), ", ", str(float_long), ", ", str(int_alt))
-        self.newRelCoordinate.emit(float_lat, float_long, int_alt)
+    def signal_new_rel_coordinate(self):
+        print("new rel undiv coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(self.rel_alt))
+        self.rel_lat = self.rel_lat / 10000000
+        self.rel_long = self.rel_long / 10000000
+        int_alt = int(self.rel_alt)
+        print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
+        self.newAbsCoordinate.emit(self.abs_lat + self.rel_lat, self.abs_long + self.rel_long, int(self.abs_alt) + int_alt)
 
 
 app = QGuiApplication([])
