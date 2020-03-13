@@ -149,7 +149,7 @@ enum State armedHandler(void) {
     absAlt.concat(alt_abs);
     Serial.println(absAlt);
     String battVoltStr = "battVolt";
-    battVoltStr.concat(battVolt);
+    battVoltStr.concat(battVoltBits);
     Serial.println(battVoltStr);
     if (DEBUG) {
       Serial.print("RSSI: ");
@@ -191,8 +191,8 @@ enum State activeHandler(void) {
     String relAlt = "relAlt";
     relAlt.concat(alt_rel);
     Serial.println(relAlt);
-    String battVoltStr = "batVolt";
-    battVoltStr.concat(battVolt);
+    String battVoltStr = "battVolt";
+    battVoltStr.concat(battVoltBits);
     Serial.println(battVoltStr);
     if (DEBUG) {
       Serial.print("RSSI: ");

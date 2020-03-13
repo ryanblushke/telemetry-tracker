@@ -16,6 +16,7 @@ class Gui(QObject):
     stateChanged = pyqtSignal(str, arguments=['tele_state'])
     newAbsCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
     newRelCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
+    newBattVolt = pyqtSignal(str, arguments=['pct'])
 
     def __init__(self, port_name):
         super().__init__()
@@ -39,6 +40,7 @@ class Gui(QObject):
         self.prev_lat = 0  # type: float
         self.prev_long = 0  # type: float
         self.prev_alt = 0  # type: float
+        self.batt_volt = 0  # type: int
 
     def connect_signals(self):
         self.changeState.connect(self.set_state)
@@ -61,6 +63,9 @@ class Gui(QObject):
         elif 'relAlt' in text:
             self.rel_alt = float(text.lstrip('relAlt'))
             self.signal_new_rel_coordinate()
+        elif 'battVolt' in text:
+            self.batt_volt = int(float(text.lstrip('battVolt')))
+            self.signal_new_batt_volt()
         elif 'absLat' in text:
             self.abs_lat = float(text.lstrip('absLat'))
         elif 'absLong' in text:
@@ -97,6 +102,12 @@ class Gui(QObject):
             self.prev_alt = int(self.abs_alt) + int_alt
             print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
             self.newRelCoordinate.emit(self.prev_lat, self.prev_long, self.prev_alt)
+
+    def signal_new_batt_volt(self):
+        print("new batt_volt is: " + str(self.batt_volt))
+        pct = self.batt_volt / 15.0 * 100
+        pct_str = "{0:.2f}".format(pct)
+        self.newBattVolt.emit(pct_str)
 
     def signal_state_changed(self, state):
         print("state changed to: " + state + "\n")

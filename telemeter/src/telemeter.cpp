@@ -255,7 +255,10 @@ void encodeRelativePacket() {
       break;
     }
   }
-  Serial.print("Measured State of Charge: "); Serial.println(result);
+  if (DEBUG) {
+    Serial.print("Measured State of Charge: ");
+    Serial.println(result);
+  }
   data[4] &= ~0x0F;
   data[4] |= 0x0F & result;
 }

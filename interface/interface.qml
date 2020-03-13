@@ -104,15 +104,15 @@ Rectangle {
 
     Button {
         id: stateButton1
-        x: 900
-        y: 189
+        x: 906
+        y: 17
         text: qsTr("ARM")
 
         onClicked: gui.changeState("ARM")
     }
 
     Text {
-        id: element
+        id: sysstate
         x: 601
         y: 8
         width: 100
@@ -124,16 +124,16 @@ Rectangle {
 
         Connections {
             target: gui
-            onStateChanged: element.text = qsTr("Current State: ") + tele_state
+            onStateChanged: sysstate.text = qsTr("Current State: ") + tele_state
         }
     }
 
     ChartView {
         id: spline
         x: 554
-        y: 210
-        width: 300
-        height: 300
+        y: 68
+        width: 462
+        height: 644
         Connections {
             target: gui
             onNewAbsCoordinate: {
@@ -155,9 +155,24 @@ Rectangle {
                     axis_x.max = test.count + 1
                     test.append(test.count, alti)
                 } else {
-                    element.text = "QTERROR"
+                    sysstate.text = "QTERROR"
                 }
             }
+        }
+    }
+
+    Text {
+        id: battery
+        x: 780
+        y: 17
+        width: 100
+        height: 32
+        text: qsTr("Battery:")
+        font.pixelSize: 12
+
+        Connections {
+            target: gui
+            onNewBattVolt: battery.text = qsTr("Battery (%): ") + pct
         }
     }
 }
