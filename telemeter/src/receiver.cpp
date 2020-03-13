@@ -3,6 +3,7 @@
 #include "receiver.h"
 
 #define DEBUG true
+#define MAXVOLT 4.193
 
 byte stateChange[1] = {0xFF};
 byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -23,7 +24,8 @@ int32_t GPS_lng_abs_undiv = 0;
 int16_t alt_abs = 0;
 
 // Battery voltage
-int8_t battVolt = 0;
+int8_t battVoltBits = 0;
+float battVolt = 0;
 
 // State print flags
 int idleStatePrinted = 0;
@@ -92,7 +94,8 @@ void decodeRelativePacket() {
   if ((data[3] & 0x40) == 0x40) {
     alt_rel = alt_rel * -1;
   }
-  battVolt = data[4] & 0x0F;
+  battVoltBits = data[4] & 0x0F;
+  battVolt = (battVoltBits - 15) * 0.0510625 + MAXVOLT;
 }
 
 enum State sleepHandler(void) {
@@ -188,6 +191,9 @@ enum State activeHandler(void) {
     String relAlt = "relAlt";
     relAlt.concat(alt_rel);
     Serial.println(relAlt);
+    String battVoltStr = "batVolt";
+    battVoltStr.concat(battVolt);
+    Serial.println(battVoltStr);
     if (DEBUG) {
       Serial.print("RSSI: ");
       Serial.println(radio.rssi());

@@ -7,10 +7,10 @@
 #define SEND false
 #define PRINTTIME false
 #define FLASH false
-#define NOGPS false
+#define NOGPS true
 #define TIMEOUT 3000
 #define VBATPIN A7
-#define MAXVOLT 4.2
+#define MAXVOLT 4.193
 
 enum State {
   SLEEP = 0,
@@ -242,7 +242,11 @@ void encodeRelativePacket() {
   measuredvbat /= 4096; // convert to voltage
   Serial.print("VBat: " ); Serial.println(measuredvbat);
   float voltDif = MAXVOLT - measuredvbat;
-  uint8_t volt = 15 - voltDif/0.05625;
+  uint8_t volt = 15 - voltDif/0.0510625;
+  if(volt > 15){
+    volt = 15;
+  }
+  Serial.print("Volt: "); Serial.println(volt);
   data[4] &= ~0x0F;
   data[4] |= 0x0F & volt;
 }
