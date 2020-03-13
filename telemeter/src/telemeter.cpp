@@ -2,12 +2,12 @@
 
 #include "telemeter.h"
 
-#define DEBUG true
+#define DEBUG false
 #define UPDATE true
 #define SEND false
 #define PRINTTIME false
 #define FLASH false
-#define NOGPS true
+#define NOGPS false
 #define TIMEOUT 3000
 #define VBATPIN A7
 #define MAXVOLT 4.193
@@ -328,8 +328,7 @@ enum State activeHandler(void) {
   radio.tx(data, 5);
   if (SEND) Serial.println("Done send");
   imu.queryData();
-  //TODO: UNCOMMENT
-  //logLineOfDataToSDCard();
+  logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
   && (imu.AZ > -20 && imu.AZ < 20)) {
     if (PRINTTIME) {

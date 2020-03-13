@@ -2,7 +2,7 @@
 
 #include "receiver.h"
 
-#define DEBUG true
+#define DEBUG false
 #define MAXVOLT 4.193
 
 byte stateChange[1] = {0xFF};
