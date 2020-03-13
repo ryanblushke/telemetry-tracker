@@ -148,6 +148,12 @@ void updateRelativeLocation() {
   }
 
   if (UPDATE) {
+    Serial.print("gps.location.lat(): ");
+    Serial.println(gps.location.lat());
+    Serial.print("gps.location.lng(): ");
+    Serial.println(gps.location.lng());
+    Serial.print("gps.altitude.meters(): ");
+    Serial.println(gps.altitude.meters());
     Serial.print("(int16_t) Relative Latitude: ");
     Serial.println(GPS_lat_rel);
     Serial.print("(int16_t) Relative Longitude: ");
@@ -268,7 +274,9 @@ enum State armedHandler(void) {
   //Both of the devices must be set to the idle state in the current
   //configuration
   if (initTimeout == 1) initTimeout = 0;
-  if(DEBUG) Serial.println("Waiting for GPS lock");
+  if(DEBUG) Serial.print("Waiting for GPS lock gps.location.lat(): ");
+  if(DEBUG) Serial.println(gps.location.lat());
+
   if(NOGPS || gps.location.lat() != 0) {
     //Transmit absolute position to the receiver
     updateAbsoluteLocation();
@@ -291,7 +299,15 @@ enum State armedHandler(void) {
 
     //Wait for movement to move into active
     updateRelativeLocation();
-    while ((!NOGPS) && (altitude_rel < 1)) updateRelativeLocation();
+    while ((!NOGPS) && (altitude_rel < 1)) {
+      updateRelativeLocation();
+      // Update GPS Parser
+      while (Serial1.available()) {
+        char c = Serial1.read();
+        // Serial.write(c);
+        gps.encode(c);
+      }
+    }
     return ACTIVE;
   }
   return ARMED;
