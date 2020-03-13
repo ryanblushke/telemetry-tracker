@@ -12,6 +12,12 @@
 #define VBATPIN A7
 #define MAXVOLT 4.193
 
+// Values recorded for 105mAh Cell, 1C discharge
+// Output value is rounded down to the nearest threshold, so only 15 thresholds are used to map 16 possible outputs
+// So we round down by dropping the lower threshold, or round up by dropping the upper one.
+// uint16_t LIPO_LUT[16] = {0, 3376, 3429, 3468, 3498, 3523, 3542, 3563, 3588, 3617, 3650, 3687, 3727, 3773, 3823, 3882}; // Round down
+uint16_t LIPO_LUT[16] = {0, 3429, 3468, 3498, 3523, 3542, 3563, 3588, 3617, 3650, 3687, 3727, 3773, 3823, 3882, 4193};  // Round up
+
 enum State {
   SLEEP = 0,
   IDLE = 1,
@@ -234,21 +240,24 @@ void encodeRelativePacket() {
     data[4] = altitude_rel_bot << 4;
   }
 
+  // Measure Battery Voltage
   float measuredvbat = analogRead(VBATPIN);
-  Serial.print("measuredvbat: " ); Serial.println(measuredvbat);
-
-  measuredvbat *= 2;    // we divided by 2, so multiply back
-  measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-  measuredvbat /= 4096; // convert to voltage
+  Serial.print("Raw Measured VBat: " ); Serial.println(measuredvbat);
+  measuredvbat *= 2;    // resistor network divided by 2, so multiply back
+  measuredvbat /= 4096; // Convert to decimal number
+  measuredvbat *= 3300;  // Multiply by 3300mV, our reference voltage
   Serial.print("VBat: " ); Serial.println(measuredvbat);
-  float voltDif = MAXVOLT - measuredvbat;
-  uint8_t volt = 15 - voltDif/0.0510625;
-  if(volt > 15){
-    volt = 15;
+  uint8_t result = 0;
+  // Convert to battery state with LUT.
+  for (int i = 15; i > 0; i--){
+    if (measuredvbat > LIPO_LUT[i]) {
+      result = i;
+      break;
+    }
   }
-  Serial.print("Volt: "); Serial.println(volt);
+  Serial.print("Measured State of Charge: "); Serial.println(result);
   data[4] &= ~0x0F;
-  data[4] |= 0x0F & volt;
+  data[4] |= 0x0F & result;
 }
 
 enum State sleepHandler(void) {
