@@ -7,7 +7,7 @@
 #define SEND false
 #define PRINTTIME false
 #define FLASH false
-#define NOGPS true
+#define NOGPS false
 #define TIMEOUT 3000
 #define VBATPIN A7
 #define MAXVOLT 4.2
@@ -290,12 +290,9 @@ enum State armedHandler(void) {
     }
 
     //Wait for movement to move into active
-    imu.queryData();
-    while((!NOGPS) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20)
-        || (imu.AZ < -20 || imu.AZ > 20))) {
-          if(DEBUG) Serial.println("Waiting for movement");
-        }
-      return ACTIVE;
+    updateRelativeLocation();
+    while ((!NOGPS) && (altitude_rel < 1)) updateRelativeLocation();
+    return ACTIVE;
   }
   return ARMED;
 }
