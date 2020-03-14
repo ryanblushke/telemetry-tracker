@@ -163,17 +163,36 @@ Rectangle {
     }
 
     Text {
-        id: battery
+        id: battPct
         x: 780
         y: 17
         width: 100
         height: 32
-        text: qsTr("Battery:")
+        text: qsTr("Battery (%):")
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignLeft
         font.pixelSize: 12
 
         Connections {
             target: gui
-            onNewBattVolt: battery.text = qsTr("Battery (%): ") + pct
+            onNewBattStat: battPct.text = qsTr("Battery (%): ") + pct
+        }
+    }
+
+    Text {
+        id: battTime
+        x: 780
+        y: 42
+        width: 100
+        height: 32
+        text: qsTr("Battery (h):")
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignLeft
+        font.pixelSize: 12
+
+        Connections {
+            target: gui
+            onNewBattStat: battTime.text = qsTr("Battery (h): ") + time
         }
     }
 }
