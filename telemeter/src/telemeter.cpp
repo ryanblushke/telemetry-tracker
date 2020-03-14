@@ -180,10 +180,9 @@ void encodeRelativePacket() {
   uint8_t altitude_rel_top;
   uint8_t altitude_rel_bot;
 
-  if(curr_state == LANDED){
+  if (curr_state == LANDED) {
     data[0] = 0xE0;
-  }
-  else{
+  } else {
     data[0] = 0x00;
   }
 
@@ -255,7 +254,7 @@ void encodeRelativePacket() {
   }
   uint8_t batt_state = 0;
   // Convert to battery state with LUT.
-  for (int i = 15; i > 0; i--){
+  for (int i = 15; i > 0; i--) {
     if (measuredvbat > LIPO_LUT[i]) {
       batt_state = i;
       break;
@@ -274,14 +273,14 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
-  if(rxMode != 1 || byteMode != 1){
+  if (rxMode != 1 || byteMode != 1) {
     if (DEBUG) Serial.println("Setting to Rx mode for 1 byte");
     radio.RXradioinit(1);
     rxMode = 1;
     byteMode = 1;
   }
-  if(radio.dataready()){
-    radio.rx(stateChange ,1);
+  if (radio.dataready()) {
+    radio.rx(stateChange, 1);
     Serial.println("CHANGED TO ARMED");
     Serial.print(stateChange[0], HEX);
     return ARMED;
@@ -296,24 +295,24 @@ enum State armedHandler(void) {
   //Both of the devices must be set to the idle state in the current
   //configuration
   if (initTimeout == 1) initTimeout = 0;
-  if(DEBUG) Serial.print("Waiting for GPS lock gps.location.lat(): ");
-  if(DEBUG) Serial.println(gps.location.lat());
+  if (DEBUG) Serial.print("Waiting for GPS lock gps.location.lat(): ");
+  if (DEBUG) Serial.println(gps.location.lat());
 
-  if(NOGPS || gps.location.lat() != 0) {
+  if (NOGPS || gps.location.lat() != 0) {
     //Transmit absolute position to the receiver
     updateAbsoluteLocation();
     encodeAbsolutePacket();
-    if(rxMode != 0 || byteMode != 10){
+    if (rxMode != 0 || byteMode != 10) {
       radio.TXradioinit(10);
       rxMode = 0;
       byteMode = 10;
     }
-    for(int i = 0; i < 10; i++){
+    for (int i = 0; i < 10; i++) {
       radio.tx(absData, 10);
       delay(20);
     }
     //Setup for active mode
-    if(rxMode != 0 || byteMode != 5){
+    if (rxMode != 0 || byteMode != 5) {
       radio.TXradioinit(5);
       rxMode = 0;
       byteMode = 5;
@@ -348,7 +347,7 @@ enum State activeHandler(void) {
   imu.queryData();
   logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
-  && (imu.AZ > -20 && imu.AZ < 20)) {
+      && (imu.AZ > -20 && imu.AZ < 20)) {
     if (PRINTTIME) {
       Serial.print("timeout - millis(): ");
       Serial.println(timeout - millis());
@@ -366,7 +365,7 @@ enum State activeHandler(void) {
 }
 
 enum State landedHandler(void) {
-  if(DEBUG) Serial.println("Currently Landed");
+  if (DEBUG) Serial.println("Currently Landed");
   updateRelativeLocation();
   encodeRelativePacket();
   radio.tx(data, 5);
@@ -376,7 +375,7 @@ enum State landedHandler(void) {
 
 enum State testHandler(void) {
   uint32_t ts = millis();
-  if(rxMode != 0 || byteMode != 5){
+  if (rxMode != 0 || byteMode != 5) {
     radio.TXradioinit(5);
     rxMode = 0;
     byteMode = 5;

@@ -103,18 +103,18 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
-  if(idleStatePrinted == 0){
+  if (idleStatePrinted == 0) {
     Serial.println("STATECHANGE:IDLE");
     idleStatePrinted = 1;
   }
-  if(rxMode != 0 || byteMode != 0){
+  if (rxMode != 0 || byteMode != 0) {
     radio.TXradioinit(1);
     rxMode = 0;
     byteMode = 1;
   }
   String msg = Serial.readString();
-  if(msg == "ARM") {
-    for(int i = 0; i < 10; i++){
+  if (msg == "ARM") {
+    for (int i = 0; i < 10; i++) {
       if (DEBUG) Serial.println("Transmitting to arm");
       radio.tx(stateChange, 1);
       delay(20);
@@ -125,18 +125,18 @@ enum State idleHandler(void) {
 }
 
 enum State armedHandler(void) {
-  if(armedStatePrinted == 0){
+  if (armedStatePrinted == 0) {
     Serial.println("STATECHANGE:ARMED");
     armedStatePrinted = 1;
   }
-  if(rxMode != 1 || byteMode != 10){
+  if (rxMode != 1 || byteMode != 10) {
     radio.RXradioinit(10);
     rxMode = 1;
     byteMode = 10;
     if (DEBUG) Serial.println("Set to rx for 10 bytes");
   }
 
-  if(radio.dataready()) {
+  if (radio.dataready()) {
     radio.rx(data, 10);
     decodeAbsolutePacket();
     String absLat = "absLat";
@@ -163,18 +163,18 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
-  if(activeStatePrinted == 0){
+  if (activeStatePrinted == 0) {
     Serial.println("STATECHANGE:ACTIVE");
     activeStatePrinted = 1;
   }
-  if(rxMode != 1 || byteMode != 5){
+  if (rxMode != 1 || byteMode != 5) {
     radio.RXradioinit(5);
     rxMode = 1;
     byteMode = 5;
     if (DEBUG) Serial.println("Set to rx for 5 bytes");
   }
-  if(landedStatePrinted == 0){
-    if(header == 7) {
+  if (landedStatePrinted == 0) {
+    if (header == 7) {
       Serial.println("STATECHANGE:LANDED");
       landedStatePrinted = 1;
     }
@@ -204,8 +204,8 @@ enum State activeHandler(void) {
   return ACTIVE;
 }
 
-enum State testHandler(void){
-  if(rxMode != 1 || byteMode != 5){
+enum State testHandler(void) {
+  if (rxMode != 1 || byteMode != 5) {
     radio.RXradioinit(5);
     rxMode = 1;
     byteMode = 5;
