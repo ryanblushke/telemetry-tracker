@@ -242,25 +242,31 @@ void encodeRelativePacket() {
 
   // Measure Battery Voltage
   float measuredvbat = analogRead(VBATPIN);
-  Serial.print("Raw Measured VBat: " ); Serial.println(measuredvbat);
+  if (DEBUG) {
+    Serial.print("Raw Measured VBat: " );
+    Serial.println(measuredvbat);
+  }
   measuredvbat *= 2;    // resistor network divided by 2, so multiply back
   measuredvbat /= 4096; // Convert to decimal number
   measuredvbat *= 3300;  // Multiply by 3300mV, our reference voltage
-  Serial.print("VBat: " ); Serial.println(measuredvbat);
-  uint8_t result = 0;
+  if (DEBUG) {
+    Serial.print("VBat: " );
+    Serial.println(measuredvbat);
+  }
+  uint8_t batt_state = 0;
   // Convert to battery state with LUT.
   for (int i = 15; i > 0; i--){
     if (measuredvbat > LIPO_LUT[i]) {
-      result = i;
+      batt_state = i;
       break;
     }
   }
   if (DEBUG) {
     Serial.print("Measured State of Charge: ");
-    Serial.println(result);
+    Serial.println(batt_state);
   }
   data[4] &= ~0x0F;
-  data[4] |= 0x0F & result;
+  data[4] |= 0x0F & batt_state;
 }
 
 enum State sleepHandler(void) {
@@ -367,7 +373,6 @@ enum State landedHandler(void) {
   delay(1000);
   return LANDED;
 }
-
 
 enum State testHandler(void) {
   uint32_t ts = millis();
