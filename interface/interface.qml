@@ -145,15 +145,16 @@ Rectangle {
                 axis_x.min = 0
                 axis_y.min = 0
                 axis_x.max = 1
-                axis_y.max = 9848
+                axis_y.max = alti
             }
             onNewRelCoordinate: {
                 var test = spline.series("Altitude vs Time")
                 if (test !== null) {
                     var axis_x = spline.axisX(test)
                     var axis_y = spline.axisY(test)
-                    axis_x.max = test.count + 1
+                    axis_x.max = test.count
                     test.append(test.count, alti)
+                    if (alti > axis_y.max) axis_y.max = alti
                 } else {
                     sysstate.text = "QTERROR"
                 }
