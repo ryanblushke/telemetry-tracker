@@ -319,15 +319,10 @@ enum State armedHandler(void) {
     }
 
     //Wait for movement to move into active
-    updateRelativeLocation();
-    while ((!NOGPS) && (altitude_rel < 1)) {
-      updateRelativeLocation();
-      // Update GPS Parser
-      while (Serial1.available()) {
-        char c = Serial1.read();
-        // Serial.write(c);
-        gps.encode(c);
-      }
+    imu.queryData();
+    if ((!NOGPS) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20) || (imu.AZ < -20 || imu.AZ > 20))) {
+      if(DEBUG) Serial.println("Waiting for movement");
+      return ARMED;
     }
     return ACTIVE;
   }
