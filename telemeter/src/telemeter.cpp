@@ -552,10 +552,10 @@ void loop() {
     Serial.println(curr_state);
   }
 
-  if (millis() > (lastLogTime + 100)) {
-    lastLogTime = millis();
-    if (FLASH) logLineOfDataToSDCard();
-  }
+  //if (millis() > (lastLogTime + 100)) {
+  //  lastLogTime = millis();
+  //  if (FLASH) logLineOfDataToSDCard();
+  //}
   updateADCReading();
 
   // Update GPS Parser
