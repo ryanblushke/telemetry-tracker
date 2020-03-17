@@ -125,10 +125,6 @@ enum State idleHandler(void) {
 }
 
 enum State armedHandler(void) {
-  if (armedStatePrinted == 0) {
-    Serial.println("STATECHANGE:ARMED");
-    armedStatePrinted = 1;
-  }
   if (rxMode != 1 || byteMode != 10) {
     radio.RXradioinit(10);
     rxMode = 1;
@@ -151,6 +147,10 @@ enum State armedHandler(void) {
     String battVoltStr = "battVolt";
     battVoltStr.concat(battVoltBits);
     Serial.println(battVoltStr);
+    if (armedStatePrinted == 0) {
+      Serial.println("STATECHANGE:ARMED");
+      armedStatePrinted = 1;
+    }
     if (DEBUG) {
       Serial.print("RSSI: ");
       Serial.println(radio.rssi());
@@ -163,10 +163,6 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
-  if (activeStatePrinted == 0) {
-    Serial.println("STATECHANGE:ACTIVE");
-    activeStatePrinted = 1;
-  }
   if (rxMode != 1 || byteMode != 5) {
     radio.RXradioinit(5);
     rxMode = 1;
@@ -180,6 +176,10 @@ enum State activeHandler(void) {
     }
   }
   if (radio.dataready()) {
+    if (activeStatePrinted == 0) {
+      Serial.println("STATECHANGE:ACTIVE");
+      activeStatePrinted = 1;
+    }
     radio.rx(data, 5);
     decodeRelativePacket();
     String relLat = "relLat";
