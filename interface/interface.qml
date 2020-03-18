@@ -147,7 +147,7 @@ Rectangle {
                 axis_x.max = 1
                 axis_y.max = alti
             }
-            onNewRelCoordinate: {
+            onNewAlt: {
                 var test = spline.series("Altitude vs Time")
                 if (test !== null) {
                     var axis_x = spline.axisX(test)

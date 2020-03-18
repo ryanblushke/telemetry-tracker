@@ -15,7 +15,8 @@ class Gui(QObject):
     changeState = pyqtSignal(str)
     stateChanged = pyqtSignal(str, arguments=['tele_state'])
     newAbsCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
-    newRelCoordinate = pyqtSignal(float, float, int, arguments=['lati', 'longi', 'alti'])
+    newRelCoordinate = pyqtSignal(float, float, arguments=['lati', 'longi'])
+    newAlt = pyqtSignal(int, arguments=['alti'])
     newBattStat = pyqtSignal(str, str, arguments=['pct', 'time'])
 
     def __init__(self, port_name):
@@ -37,9 +38,6 @@ class Gui(QObject):
         self.cur_lat = 0  # type: float
         self.cur_long = 0  # type: float
         self.cur_alt = 0  # type: float
-        self.prev_lat = 0  # type: float
-        self.prev_long = 0  # type: float
-        self.prev_alt = 0  # type: float
         self.batt_stat = 0  # type: int
 
     def connect_signals(self):
@@ -60,9 +58,11 @@ class Gui(QObject):
             self.rel_lat = float(text.lstrip('relLat'))
         elif 'relLong' in text:
             self.rel_long = float(text.lstrip('relLong'))
+            self.signal_new_rel_coordinate()
         elif 'relAlt' in text:
             self.rel_alt = float(text.lstrip('relAlt'))
-            self.signal_new_rel_coordinate()
+            if self.state != 'LANDED':
+                self.signal_new_alt()
         elif 'battVolt' in text:
             self.batt_stat = int(float(text.lstrip('battVolt')))
             self.signal_new_batt_stat()
@@ -77,6 +77,7 @@ class Gui(QObject):
             state = text.lstrip('STATECHANGE')
             state = state.lstrip(':')
             print("strip: " + state + "\n")
+            self.state = state
             self.signal_state_changed(state)
 
     def signal_new_abs_coordinate(self):
@@ -88,20 +89,18 @@ class Gui(QObject):
         self.newAbsCoordinate.emit(self.abs_lat, self.abs_long, int_alt)
 
     def signal_new_rel_coordinate(self):
-        print("new rel undiv coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(self.rel_alt))
+        print("new rel undiv coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long))
         self.rel_lat = self.rel_lat / 10000000
         self.rel_long = self.rel_long / 10000000
-        int_alt = int(self.rel_alt)
         self.cur_lat = self.abs_lat + self.rel_lat
         self.cur_long = self.abs_long + self.rel_long
-        self.cur_alt = int(self.abs_alt) + int_alt
+        self.newRelCoordinate.emit(self.cur_lat, self.cur_long)
 
-        if not (self.cur_lat - self.prev_lat == 0 and self.cur_long - self.prev_long == 0 and self.cur_alt - self.prev_alt == 0):
-            self.prev_lat = self.abs_lat + self.rel_lat
-            self.prev_long = self.abs_long + self.rel_long
-            self.prev_alt = int(self.abs_alt) + int_alt
-            print("new rel div coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long), ", ", str(int_alt))
-            self.newRelCoordinate.emit(self.prev_lat, self.prev_long, self.prev_alt)
+    def signal_new_alt(self):
+        print("new alt is: " + str(self.rel_alt))
+        int_alt = int(self.rel_alt)
+        self.cur_alt = int(self.abs_alt) + int_alt
+        self.newAlt.emit(self.cur_alt)
 
     def signal_new_batt_stat(self):
         print("new batt_stat is: " + str(self.batt_stat))
