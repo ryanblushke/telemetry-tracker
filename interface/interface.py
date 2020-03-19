@@ -1,9 +1,9 @@
-from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot, QIODevice
+from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot, QIODevice, QTimer
 from PyQt5.QtSerialPort import QSerialPort
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQuick import QQuickView
 import sys
-
+import serial
 
 class Gui(QObject):
     """Talks to receiver to tx/rx info.
@@ -23,12 +23,9 @@ class Gui(QObject):
         super().__init__()
         self.state = "IDLE"
         # open the serial port
-        self.serial = QSerialPort(self)
-        self.serial.setPortName(port_name)
-        if self.serial.open(QIODevice.ReadWrite):
-            self.serial.setBaudRate(QSerialPort.Baud115200, QSerialPort.AllDirections)
-        else:
-            raise IOError("Cannot connect to device on port")
+        self.serial = serial.Serial(port_name, 115200, timeout=0)
+        self.loop_timer = QTimer()
+        self.loop_timer.start(50)
         self.abs_lat = 0  # type: float
         self.abs_long = 0  # type: float
         self.abs_alt = 0  # type: float
@@ -39,21 +36,27 @@ class Gui(QObject):
         self.cur_long = 0  # type: float
         self.cur_alt = 0  # type: float
         self.batt_stat = 0  # type: int
+        self.serial_in = ""
 
     def connect_signals(self):
         self.changeState.connect(self.set_state)
-        self.serial.readyRead.connect(self.recv_serial_msg)
+        self.loop_timer.timeout.connect(self.timer_tick)
 
     @pyqtSlot(str, name="set_state")
     def set_state(self, state):
         print("set state to: " + state + "\n")
-        self.serial.write(state.encode())
+        self.serial.write((state + "\r\n").encode())
 
-    @pyqtSlot()
-    def recv_serial_msg(self):
-        text = self.serial.readLine().data().decode()
-        text = text.rstrip('\r\n')
-        print(text)
+    def timer_tick(self):
+        # Process any complete lines that came in over serial
+        while self.serial.inWaiting() > 0:
+            self.serial_in += self.serial.read().decode()
+            if self.serial_in[-2:] == '\r\n':
+                self.recv_serial_msg(self.serial_in[:-2])
+                self.serial_in = ""
+
+    def recv_serial_msg(self, text):
+        print("Received message:", text)
         if 'relLat' in text:
             self.rel_lat = float(text.lstrip('relLat'))
         elif 'relLong' in text:
@@ -122,7 +125,8 @@ view.setHeight(720)
 view.setTitle('Telemetry Tracker')
 view.setResizeMode(QQuickView.SizeRootObjectToView)
 url = QUrl('interface.qml')
-gui = Gui(sys.argv[1])
+# gui = Gui(sys.argv[1])
+gui = Gui("COM22")
 gui.connect_signals()
 view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)

@@ -189,3 +189,16 @@ float Radio::snr() {
   int8_t snr = (int8_t)readbyte(0x19);
   return (snr / 4.0);
 }
+
+void Radio::initialize(Mode mode, byte len){
+  // Initialize the radio, only if not already initialized
+  if (lastMode != mode || lastLength != len) {
+    if (mode == TX) {
+      TXradioinit(len);
+    } else {
+      RXradioinit(len);
+    }
+    lastMode = mode;
+    lastLength = len;
+  }
+}

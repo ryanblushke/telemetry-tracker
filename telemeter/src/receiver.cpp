@@ -2,15 +2,11 @@
 
 #include "receiver.h"
 
-#define DEBUG false
+#define DEBUG true
 #define MAXVOLT 4.193
 
 byte stateChange[1] = {0xFF};
 byte data[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-//Flag for RX TX MODE
-int rxMode = 0;
-int byteMode = 0;
 
 // Relative data packet variables
 uint8_t header = 0;
@@ -33,11 +29,9 @@ int armedStatePrinted = 0;
 int activeStatePrinted = 0;
 int landedStatePrinted = 0;
 
-
 Radio radio;
 
 enum State {
-  SLEEP = 0,
   IDLE = 1,
   ARMED = 2,
   ACTIVE = 3,
@@ -46,6 +40,22 @@ enum State {
 };
 
 enum State curr_state = IDLE;
+
+String serialBuffer = "";
+// Checks for incoming characters, and returns a full line terminated by \r\n
+// If not possible, returns ""
+String lookForSerialCommand(){
+  while (Serial.available()){
+    serialBuffer += (char)Serial.read();
+    if (serialBuffer.endsWith("\r\n")){
+      String temp = serialBuffer;
+      temp.remove(temp.length() - 2);
+      serialBuffer = "";
+      return temp;
+    }
+  }
+  return "";
+}
 
 void decodeAbsolutePacket() {
   //Latitude Decode
@@ -98,24 +108,16 @@ void decodeRelativePacket() {
   battVolt = (battVoltBits - 15) * 0.0510625 + MAXVOLT;
 }
 
-enum State sleepHandler(void) {
-  return SLEEP;
-}
-
 enum State idleHandler(void) {
   if (idleStatePrinted == 0) {
     Serial.println("STATECHANGE:IDLE");
     idleStatePrinted = 1;
   }
-  if (rxMode != 0 || byteMode != 0) {
-    radio.TXradioinit(1);
-    rxMode = 0;
-    byteMode = 1;
-  }
-  String msg = Serial.readString();
+  radio.initialize(TX, 1);
+  String msg = lookForSerialCommand();
   if (msg == "ARM") {
     for (int i = 0; i < 10; i++) {
-      if (DEBUG) Serial.println("Transmitting to arm");
+      if (DEBUG) Serial.println("Transmitting ARM");
       radio.tx(stateChange, 1);
       delay(20);
     }
@@ -125,13 +127,7 @@ enum State idleHandler(void) {
 }
 
 enum State armedHandler(void) {
-  if (rxMode != 1 || byteMode != 10) {
-    radio.RXradioinit(10);
-    rxMode = 1;
-    byteMode = 10;
-    if (DEBUG) Serial.println("Set to rx for 10 bytes");
-  }
-
+  radio.initialize(RX, 10);
   if (radio.dataready()) {
     radio.rx(data, 10);
     decodeAbsolutePacket();
@@ -163,12 +159,7 @@ enum State armedHandler(void) {
 }
 
 enum State activeHandler(void) {
-  if (rxMode != 1 || byteMode != 5) {
-    radio.RXradioinit(5);
-    rxMode = 1;
-    byteMode = 5;
-    if (DEBUG) Serial.println("Set to rx for 5 bytes");
-  }
+  radio.initialize(RX, 5);
   if (landedStatePrinted == 0) {
     if (header == 7) {
       Serial.println("STATECHANGE:LANDED");
@@ -205,13 +196,7 @@ enum State activeHandler(void) {
 }
 
 enum State testHandler(void) {
-  if (rxMode != 1 || byteMode != 5) {
-    radio.RXradioinit(5);
-    rxMode = 1;
-    byteMode = 5;
-    if (DEBUG) Serial.println("Set to rx for 5 bytes");
-  }
-
+  radio.initialize(RX, 5);
   String msg = Serial.readString();
   Serial.println("ACK: " + msg);
 
@@ -234,24 +219,15 @@ enum State testHandler(void) {
 
 void setup() {
   Serial.begin(115200);
-
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  rxMode = 1;
-  byteMode = 10;
-  radio.RXradioinit(10);
-  //TODO comment this line when we dont want to open serial to move past
   while (!Serial) {;} // Wait for serial channel to open
-
   Serial.println("Starting");
 }
 
 
 void loop() {
   switch (curr_state) {
-  case SLEEP:
-    curr_state = sleepHandler();
-    break;
   case IDLE:
     curr_state = idleHandler();
     break;

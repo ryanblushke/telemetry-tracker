@@ -2,15 +2,16 @@
 
 #include "telemeter.h"
 
-#define DEBUG false
+// Debug print flags
+#define DEBUG true
 #define UPDATE true
-#define SEND false
-#define PRINTTIME false
-#define FLASH false
-#define NOGPS false
+#define SEND true
+#define PRINTTIME true
+
+#define FLASH true
+#define NOGPS true
 #define TIMEOUT 3000
 #define VBATPIN A7
-#define MAXVOLT 4.193
 
 // Values recorded for 105mAh Cell, 1C discharge
 // Output value is rounded down to the nearest threshold, so only 15 thresholds are used to map 16 possible outputs
@@ -34,10 +35,6 @@ byte stateChange[1] = {0x00};
 byte data[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 byte absData[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-
-//Flag for RX TX MODE
-int rxMode = 0;
-int byteMode = 0;
 
 //Intermediate relative float values
 float GPS_lat_rel_flt = 0;
@@ -63,7 +60,7 @@ int32_t GPS_lng_abs = 0;
 unsigned long timeout = 0;
 int32_t initTimeout = 0;
 int counter = 0;
-const int chipSelect = 8;
+const int chipSelect = 11;  // For SD Card
 SdFat sd;
 SdFile file;
 TinyGPSPlus gps;
@@ -71,7 +68,6 @@ uint32_t lastLogTime = 0;
 
 IMU imu;
 PressureSensor pressureSensor;
-Flash flash;
 Radio radio;
 
 void fastBlink() {
@@ -273,12 +269,7 @@ enum State sleepHandler(void) {
 }
 
 enum State idleHandler(void) {
-  if (rxMode != 1 || byteMode != 1) {
-    if (DEBUG) Serial.println("Setting to Rx mode for 1 byte");
-    radio.RXradioinit(1);
-    rxMode = 1;
-    byteMode = 1;
-  }
+  radio.initialize(RX, 1);
   if (radio.dataready()) {
     radio.rx(stateChange, 1);
     Serial.println("CHANGED TO ARMED");
@@ -302,25 +293,18 @@ enum State armedHandler(void) {
     //Transmit absolute position to the receiver
     updateAbsoluteLocation();
     encodeAbsolutePacket();
-    if (rxMode != 0 || byteMode != 10) {
-      radio.TXradioinit(10);
-      rxMode = 0;
-      byteMode = 10;
-    }
+    radio.initialize(TX, 10);
     for (int i = 0; i < 10; i++) {
       radio.tx(absData, 10);
       delay(20);
     }
     //Setup for active mode
-    if (rxMode != 0 || byteMode != 5) {
-      radio.TXradioinit(5);
-      rxMode = 0;
-      byteMode = 5;
-    }
+    radio.initialize(TX, 5);
+
 
     //Wait for movement to move into active
     imu.queryData();
-    if ((!NOGPS) && !((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20) || (imu.AZ < -20 || imu.AZ > 20))) {
+    if (!((imu.AX < -20 || imu.AX > 20) || (imu.AY < -20 || imu.AY > 20) || (imu.AZ < -20 || imu.AZ > 20))) {
       if(DEBUG) Serial.println("Waiting for movement");
       return ARMED;
     }
@@ -340,7 +324,7 @@ enum State activeHandler(void) {
   radio.tx(data, 5);
   if (SEND) Serial.println("Done send");
   imu.queryData();
-  logLineOfDataToSDCard();
+  if (FLASH) logLineOfDataToSDCard();
   if ((imu.AX > -20 && imu.AX < 20) && (imu.AY > -20 && imu.AY < 20)
       && (imu.AZ > -20 && imu.AZ < 20)) {
     if (PRINTTIME) {
@@ -370,11 +354,7 @@ enum State landedHandler(void) {
 
 enum State testHandler(void) {
   uint32_t ts = millis();
-  if (rxMode != 0 || byteMode != 5) {
-    radio.TXradioinit(5);
-    rxMode = 0;
-    byteMode = 5;
-  }
+  radio.initialize(TX, 5);
   //updateAbsoluteLocation();
   updateRelativeLocation();
   encodeRelativePacket();
@@ -388,11 +368,10 @@ enum State testHandler(void) {
 }
 
 uint32_t smoothedADCValue = 0;
-float alpha =
-  0.01; // More alpha = faster response (1.0 = no smoothing, 0.001 = lots)
+float alpha = 0.01; // More alpha = faster response (1.0 = no smoothing, 0.001 = lots)
 // bool first = true;
 
-void updateADCReading() {
+void updateADCReadings() {
   uint32_t newValue = analogRead(A0) << 16;
   // if (REG_ADC_INTFLAG & 1 || first){ // If conversion done, start another
   //     first = false;
@@ -403,8 +382,8 @@ void updateADCReading() {
   // }
 }
 
+
 void logLineOfDataToSDCard() {
-  // uint32_t starttime = millis();
   if (!file.open("data.txt", FILE_WRITE)) {
     Serial.println("File Open Error");
     fastBlink();
@@ -412,7 +391,6 @@ void logLineOfDataToSDCard() {
   }
   imu.queryCalibrated();
   imu.queryData();
-  // Serial.println("Logging");
   file.print(millis()); // System Timestamp, mS
   file.print(',');
   file.print(pressureSensor.queryData(), 4);// Atmospheric pressure, pascels
@@ -447,7 +425,7 @@ void logLineOfDataToSDCard() {
   file.print(",");
   file.print(imu.QZ);
   file.print(",");
-  file.print(float(smoothedADCValue) / pow(2.0, 32.0) * 3.3, 8);
+  file.print(float(smoothedADCValue) / pow(2.0, 32.0) * 3.3, 8); // pitot tube data as voltage
   file.print(",");
   file.print(smoothedADCValue); // Pitot tube data
   file.print(",");
@@ -488,25 +466,22 @@ void logLineOfDataToSDCard() {
     Serial.println("Write error");
     fastBlink();
   }
-  // Serial.println(millis() - starttime);
 }
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
   imu.init();
-  flash.init();
   pressureSensor.init();
   radio.RXradioinit(1);
 
-  // startTimer(10); // In Hz
+  Serial.println("Starting");
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
   analogReadResolution(12);
   pinMode(A0, INPUT);
 
-  Serial.println("Starting");
   if (FLASH) {
     while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
       Serial.println("initialization failed");
@@ -523,11 +498,10 @@ void setup() {
     Serial.print("initial state: ");
     Serial.println(curr_state);
   }
-  rxMode = 1;
-  byteMode = 1;
 }
 
 void loop() {
+  uint32_t starttime = millis();
   switch (curr_state) {
   case SLEEP:
     curr_state = sleepHandler();
@@ -551,17 +525,13 @@ void loop() {
     Serial.print("Error - Invalid State: ");
     Serial.println(curr_state);
   }
-
-  //if (millis() > (lastLogTime + 100)) {
-  //  lastLogTime = millis();
-  //  if (FLASH) logLineOfDataToSDCard();
-  //}
-  updateADCReading();
+  
+  updateADCReadings();
 
   // Update GPS Parser
   while (Serial1.available()) {
     char c = Serial1.read();
-    // Serial.write(c);
     gps.encode(c);
   }
+  if (DEBUG) Serial.print("Loop time "); Serial.println(millis() - starttime);
 }

@@ -8,6 +8,11 @@
 
 const int slaveSelectPin = 8;
 
+enum Mode {
+  TX = 0,
+  RX = 1
+};
+
 class Radio {
  public:
   byte readbyte(byte addr);
@@ -21,6 +26,10 @@ class Radio {
   int rssi();
   float snr();
   bool dataready();
+  void initialize(Mode mode, byte len);
+private:
+  Mode lastMode;
+  byte lastLength;
 };
 
 #endif
