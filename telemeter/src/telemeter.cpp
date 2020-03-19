@@ -9,7 +9,7 @@
 #define PRINTTIME true
 
 #define FLASH true
-#define NOGPS true
+#define NOGPS false
 #define TIMEOUT 3000
 #define VBATPIN A7
 
