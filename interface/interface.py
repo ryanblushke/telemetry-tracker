@@ -99,8 +99,8 @@ class Gui(QObject):
 
     def signal_new_rel_coordinate(self):
         print("new rel undiv coordinate is: " + str(self.rel_lat), ", ", str(self.rel_long))
-        self.rel_lat = self.rel_lat / 10000000
-        self.rel_long = self.rel_long / 10000000
+        self.rel_lat = self.rel_lat / 100000
+        self.rel_long = self.rel_long / 100000
         self.cur_lat = self.abs_lat + self.rel_lat
         self.cur_long = self.abs_long + self.rel_long
         self.newRelCoordinate.emit(self.cur_lat, self.cur_long)
