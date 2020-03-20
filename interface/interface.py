@@ -1,9 +1,11 @@
 from PyQt5.QtCore import QObject, QUrl, pyqtSignal, pyqtSlot, QIODevice, QTimer
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtSerialPort import QSerialPort
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQuick import QQuickView
 import sys
 import serial
+import qrcode
 
 class Gui(QObject):
     """Talks to receiver to tx/rx info.
@@ -54,6 +56,10 @@ class Gui(QObject):
             if self.serial_in[-2:] == '\r\n':
                 self.recv_serial_msg(self.serial_in[:-2])
                 self.serial_in = ""
+        qr_string = f"https://www.google.com/maps/search/?api=1&query={self.abs_lat+self.rel_lat},{self.abs_long+self.rel_long}"
+        # qr_string = f"https://www.google.com/maps/search/?api=1&query={50},{50}"
+        img = qrcode.make(qr_string)
+        img.save("qr.png")
 
     def recv_serial_msg(self, text):
         print("Received message:", text)
@@ -126,7 +132,7 @@ view.setTitle('Telemetry Tracker')
 view.setResizeMode(QQuickView.SizeRootObjectToView)
 url = QUrl('interface.qml')
 # gui = Gui(sys.argv[1])
-gui = Gui("COM22")
+gui = Gui("COM41")
 gui.connect_signals()
 view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)
