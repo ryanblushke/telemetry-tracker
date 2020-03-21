@@ -114,12 +114,12 @@ Rectangle {
 
     Text {
         id: sysstate
-        x: 601
-        y: 8
+        x: 607
+        y: 17
         width: 100
         height: 32
         text: qsTr("Current State: IDLE")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 12
 
@@ -132,9 +132,9 @@ Rectangle {
     ChartView {
         id: spline
         x: 554
-        y: 68
-        width: 462
-        height: 644
+        y: 96
+        width: 638
+        height: 616
         Connections {
             target: gui
             onNewAbsCoordinate: {
@@ -170,7 +170,7 @@ Rectangle {
         width: 100
         height: 32
         text: qsTr("Battery (%):")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignLeft
         font.pixelSize: 12
 
@@ -187,7 +187,7 @@ Rectangle {
         width: 100
         height: 32
         text: qsTr("Battery (h):")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignLeft
         font.pixelSize: 12
 
@@ -200,9 +200,9 @@ Rectangle {
     Image {
         id: qr
         x: 1012
-        y: 17
-        width: 181
-        height: 185
+        y: 0
+        width: 180
+        height: 146
         fillMode: Image.PreserveAspectFit
         source: ""
 
