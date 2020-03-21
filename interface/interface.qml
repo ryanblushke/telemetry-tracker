@@ -7,7 +7,7 @@ import QtCharts 2.3
 
 Rectangle {
     id: window
-    width: 1024
+    width: 1200
     height: 720
     visible: true
 
@@ -98,6 +98,7 @@ Rectangle {
             Connections {
                 target: gui
                 onNewAbsCoordinate: map.center = QtPositioning.coordinate(lati, longi)
+                onNewCenter: map.center = QtPositioning.coordinate(lati, longi)
             }
         }
     }
@@ -113,12 +114,12 @@ Rectangle {
 
     Text {
         id: sysstate
-        x: 601
-        y: 8
+        x: 607
+        y: 17
         width: 100
         height: 32
         text: qsTr("Current State: IDLE")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 12
 
@@ -131,9 +132,9 @@ Rectangle {
     ChartView {
         id: spline
         x: 554
-        y: 68
-        width: 462
-        height: 644
+        y: 96
+        width: 638
+        height: 616
         Connections {
             target: gui
             onNewAbsCoordinate: {
@@ -169,7 +170,7 @@ Rectangle {
         width: 100
         height: 32
         text: qsTr("Battery (%):")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignLeft
         font.pixelSize: 12
 
@@ -186,13 +187,28 @@ Rectangle {
         width: 100
         height: 32
         text: qsTr("Battery (h):")
-        verticalAlignment: Text.AlignVCenter
+        verticalAlignment: Text.AlignTop
         horizontalAlignment: Text.AlignLeft
         font.pixelSize: 12
 
         Connections {
             target: gui
             onNewBattStat: battTime.text = qsTr("Battery (h): ") + time
+        }
+    }
+
+    Image {
+        id: qr
+        x: 1012
+        y: 0
+        width: 180
+        height: 146
+        fillMode: Image.PreserveAspectFit
+        source: ""
+
+        Connections {
+            target: gui
+            onNewQRCode: qr.source = "qr.png"
         }
     }
 }

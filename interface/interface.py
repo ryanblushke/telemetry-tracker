@@ -7,6 +7,7 @@ import sys
 import serial
 import qrcode
 
+
 class Gui(QObject):
     """Talks to receiver to tx/rx info.
 
@@ -20,6 +21,8 @@ class Gui(QObject):
     newRelCoordinate = pyqtSignal(float, float, arguments=['lati', 'longi'])
     newAlt = pyqtSignal(int, arguments=['alti'])
     newBattStat = pyqtSignal(str, str, arguments=['pct', 'time'])
+    newQRCode = pyqtSignal()
+    newCenter = pyqtSignal(float, float, arguments=['lati', 'longi'])
 
     def __init__(self, port_name):
         super().__init__()
@@ -56,10 +59,6 @@ class Gui(QObject):
             if self.serial_in[-2:] == '\r\n':
                 self.recv_serial_msg(self.serial_in[:-2])
                 self.serial_in = ""
-        qr_string = f"https://www.google.com/maps/search/?api=1&query={self.abs_lat+self.rel_lat},{self.abs_long+self.rel_long}"
-        # qr_string = f"https://www.google.com/maps/search/?api=1&query={50},{50}"
-        img = qrcode.make(qr_string)
-        img.save("qr.png")
 
     def recv_serial_msg(self, text):
         print("Received message:", text)
@@ -88,6 +87,16 @@ class Gui(QObject):
             print("strip: " + state + "\n")
             self.state = state
             self.signal_state_changed(state)
+            if self.state == 'LANDED':
+                self.update_qr_code()
+                self.newCenter.emit(self.cur_lat, self.cur_long)
+
+    def update_qr_code(self):
+        qr_string = f"https://www.google.com/maps/search/?api=1&query={self.abs_lat+self.rel_lat},{self.abs_long+self.rel_long}"
+        # qr_string = f"https://www.google.com/maps/search/?api=1&query={50},{50}"
+        img = qrcode.make(qr_string)
+        img.save("qr.png")
+        self.newQRCode.emit()
 
     def signal_new_abs_coordinate(self):
         print("new abs undiv coordinate is: " + str(self.abs_lat), ", ", str(self.abs_long), ", ", str(self.abs_alt))
@@ -126,13 +135,12 @@ class Gui(QObject):
 
 app = QApplication([])
 view = QQuickView()
-view.setWidth(1024)
+view.setWidth(1200)
 view.setHeight(720)
 view.setTitle('Telemetry Tracker')
 view.setResizeMode(QQuickView.SizeRootObjectToView)
 url = QUrl('interface.qml')
 gui = Gui(sys.argv[1])
-# gui = Gui("COM41")
 gui.connect_signals()
 view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)
