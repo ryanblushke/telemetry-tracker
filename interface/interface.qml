@@ -98,6 +98,7 @@ Rectangle {
             Connections {
                 target: gui
                 onNewAbsCoordinate: map.center = QtPositioning.coordinate(lati, longi)
+                onNewCenter: map.center = QtPositioning.coordinate(lati, longi)
             }
         }
     }

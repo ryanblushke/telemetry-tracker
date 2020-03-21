@@ -7,6 +7,7 @@ import sys
 import serial
 import qrcode
 
+
 class Gui(QObject):
     """Talks to receiver to tx/rx info.
 
@@ -21,6 +22,7 @@ class Gui(QObject):
     newAlt = pyqtSignal(int, arguments=['alti'])
     newBattStat = pyqtSignal(str, str, arguments=['pct', 'time'])
     newQRCode = pyqtSignal()
+    newCenter = pyqtSignal(float, float, arguments=['lati', 'longi'])
 
     def __init__(self, port_name):
         super().__init__()
@@ -87,6 +89,7 @@ class Gui(QObject):
             self.signal_state_changed(state)
             if self.state == 'LANDED':
                 self.update_qr_code()
+                self.newCenter.emit(self.cur_lat, self.cur_long)
 
     def update_qr_code(self):
         qr_string = f"https://www.google.com/maps/search/?api=1&query={self.abs_lat+self.rel_lat},{self.abs_long+self.rel_long}"
@@ -138,7 +141,6 @@ view.setTitle('Telemetry Tracker')
 view.setResizeMode(QQuickView.SizeRootObjectToView)
 url = QUrl('interface.qml')
 gui = Gui(sys.argv[1])
-# gui = Gui("COM41")
 gui.connect_signals()
 view.rootContext().setContextProperty('gui', gui)
 view.setSource(url)
