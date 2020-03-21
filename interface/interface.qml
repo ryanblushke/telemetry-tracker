@@ -203,7 +203,7 @@ Rectangle {
         width: 181
         height: 185
         fillMode: Image.PreserveAspectFit
-        source: "qr.png"
+        source: ""
 
         Connections {
             target: gui
