@@ -7,7 +7,7 @@ import QtCharts 2.3
 
 Rectangle {
     id: window
-    width: 1024
+    width: 1200
     height: 720
     visible: true
 
@@ -193,6 +193,21 @@ Rectangle {
         Connections {
             target: gui
             onNewBattStat: battTime.text = qsTr("Battery (h): ") + time
+        }
+    }
+
+    Image {
+        id: qr
+        x: 1012
+        y: 17
+        width: 181
+        height: 185
+        fillMode: Image.PreserveAspectFit
+        source: "qr.png"
+
+        Connections {
+            target: gui
+            onNewQRCode: qr.source = "qr.png"
         }
     }
 }
