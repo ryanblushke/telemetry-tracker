@@ -114,8 +114,8 @@ class Gui(QObject):
         self.rel_long = self.rel_long / 100000
         self.cur_lat = self.abs_lat + self.rel_lat
         self.cur_long = self.abs_long + self.rel_long
-        with open(self.logfilename, 'w') as f:
-            f.write(f"{self.cur_lat:0.7}, {self.cur_long:0.7}, {self.cur_alt:0.2}\n")
+        with open(self.logfilename, 'a') as f:
+            f.write(f"{float(self.cur_lat):0.7}, {float(self.cur_long):0.7}, {float(self.cur_alt):0.5}\n")
         self.newRelCoordinate.emit(self.cur_lat, self.cur_long)
 
     def signal_new_alt(self):
