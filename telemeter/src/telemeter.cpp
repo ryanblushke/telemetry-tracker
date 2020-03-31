@@ -9,8 +9,8 @@
 #define PRINTTIME true
 
 #define FLASH true
-#define NOGPS true
-#define TIMEOUT 3000
+#define NOGPS false
+#define TIMEOUT 6000
 #define VBATPIN A7
 
 // Values recorded for 105mAh Cell, 1C discharge
@@ -37,9 +37,9 @@ byte absData[10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 
 //Intermediate relative float values
-float GPS_lat_rel_flt = 0;
-float GPS_lng_rel_flt = 0;
-float alt_rel_flt = 0;
+double GPS_lat_rel_flt = 0;
+double GPS_lng_rel_flt = 0;
+double alt_rel_flt = 0;
 
 //Intermediate absolute float values
 double GPS_lat_abs_flt = 0;
@@ -50,6 +50,10 @@ double alt_abs_flt = 0;
 int16_t altitude_rel = 0;
 int16_t GPS_lat_rel = 0;
 int16_t GPS_lng_rel = 0;
+
+// Unscaled absolute floats
+double GPS_lat_abs_uns = 0;
+double GPS_lng_abs_uns = 0;
 
 //Final relative int64_t values
 // TODO: altitude_abs should be int32_t with check for negative in encode
@@ -88,6 +92,8 @@ void updateAbsoluteLocation() {
   } else {
     GPS_lat_abs_flt = gps.location.lat() * 10000000;
     GPS_lng_abs_flt = gps.location.lng() * 10000000;
+    GPS_lat_abs_uns = gps.location.lat();
+    GPS_lng_abs_uns = gps.location.lng();
     alt_abs_flt = gps.altitude.meters();
     GPS_lat_abs = GPS_lat_abs_flt;
     GPS_lng_abs = GPS_lng_abs_flt;
@@ -141,8 +147,8 @@ void updateRelativeLocation() {
     GPS_lng_rel = GPS_lng_rel_flt;
     altitude_rel = alt_rel_flt;
   } else {
-    GPS_lat_rel_flt = (gps.location.lat() - GPS_lat_abs) * 100000;
-    GPS_lng_rel_flt = (gps.location.lng() - GPS_lng_abs) * 100000;
+    GPS_lat_rel_flt = (gps.location.lat() - GPS_lat_abs_uns) * 100000;
+    GPS_lng_rel_flt = (gps.location.lng() - GPS_lng_abs_uns) * 100000;
     alt_rel_flt = gps.altitude.meters() - altitude_abs;
     GPS_lat_rel = GPS_lat_rel_flt;
     GPS_lng_rel = GPS_lng_rel_flt;
@@ -154,12 +160,20 @@ void updateRelativeLocation() {
     Serial.println(gps.location.lat());
     Serial.print("gps.location.lng(): ");
     Serial.println(gps.location.lng());
+    Serial.print("abs lat float ");
+    Serial.println(GPS_lat_abs_uns);
+    Serial.print("abs lng float ");
+    Serial.println(GPS_lng_abs_uns);
     Serial.print("gps.altitude.meters(): ");
     Serial.println(gps.altitude.meters());
     Serial.print("(int16_t) Relative Latitude: ");
     Serial.println(GPS_lat_rel);
+    Serial.print("Relative Latitude(float): ");
+    Serial.println(GPS_lat_rel_flt, 7);
     Serial.print("(int16_t) Relative Longitude: ");
     Serial.println(GPS_lng_rel);
+    Serial.print("Relative Longitude(float): ");
+    Serial.println(GPS_lng_rel_flt, 7);
     Serial.print("(int16_t) Relative Altitude: ");
     Serial.println(altitude_rel);
   }
