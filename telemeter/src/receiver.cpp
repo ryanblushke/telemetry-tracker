@@ -84,6 +84,8 @@ void decodeAbsolutePacket() {
   if (DEBUG) Serial.println(alt_abs);
 }
 
+// TODO: Updated design documentation differs from current implementation.
+// This decoding format is now deprecated.
 void decodeRelativePacket() {
   header = (data[0] & 0xE0) >> 5;
 

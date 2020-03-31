@@ -6,6 +6,7 @@ from PyQt5.QtQuick import QQuickView
 import sys
 import serial
 import qrcode
+from datetime import datetime
 
 
 class Gui(QObject):
@@ -31,17 +32,18 @@ class Gui(QObject):
         self.serial = serial.Serial(port_name, 115200, timeout=0)
         self.loop_timer = QTimer()
         self.loop_timer.start(50)
-        self.abs_lat = 0  # type: float
-        self.abs_long = 0  # type: float
-        self.abs_alt = 0  # type: float
-        self.rel_lat = 0  # type: float
-        self.rel_long = 0  # type: float
-        self.rel_alt = 0  # type: float
-        self.cur_lat = 0  # type: float
-        self.cur_long = 0  # type: float
-        self.cur_alt = 0  # type: float
+        self.abs_lat = 0.0  # type: float
+        self.abs_long = 0.0  # type: float
+        self.abs_alt = 0.0  # type: float
+        self.rel_lat = 0.0  # type: float
+        self.rel_long = 0.0  # type: float
+        self.rel_alt = 0.0  # type: float
+        self.cur_lat = 0.0  # type: float
+        self.cur_long = 0.0  # type: float
+        self.cur_alt = 0.0  # type: float
         self.batt_stat = 0  # type: int
         self.serial_in = ""
+        self.logfilename = datetime.now().strftime("GPS Log %d-%m-%Y %H-%M-%S.txt")
 
     def connect_signals(self):
         self.changeState.connect(self.set_state)
@@ -112,6 +114,8 @@ class Gui(QObject):
         self.rel_long = self.rel_long / 100000
         self.cur_lat = self.abs_lat + self.rel_lat
         self.cur_long = self.abs_long + self.rel_long
+        with open(self.logfilename, 'a') as f:
+            f.write(f"{float(self.cur_lat):0.7}, {float(self.cur_long):0.7}, {float(self.cur_alt):0.5}\n")
         self.newRelCoordinate.emit(self.cur_lat, self.cur_long)
 
     def signal_new_alt(self):

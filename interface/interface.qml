@@ -144,7 +144,7 @@ Rectangle {
                 var axis_y = spline.axisY(test)
                 test.append(0, alti)
                 axis_x.min = 0
-                axis_y.min = 0
+                axis_y.min = alti
                 axis_x.max = 1
                 axis_y.max = alti
             }
@@ -156,6 +156,7 @@ Rectangle {
                     axis_x.max = test.count
                     test.append(test.count, alti)
                     if (alti > axis_y.max) axis_y.max = alti
+                    if (alti < axis_y.min) axis_y.min = alti
                 } else {
                     sysstate.text = "QTERROR"
                 }

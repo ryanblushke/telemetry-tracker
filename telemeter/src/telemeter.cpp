@@ -181,6 +181,8 @@ void updateRelativeLocation() {
 
 //Payload first 3 bits header, next 11 bits for lat (first bit sign),
 //next 11 bits for long (first bit sign), next 11 bits altitude (first bit signed)
+// TODO: Updated design documentation differs from current implementation.
+// This encoding format is now deprecated.
 void encodeRelativePacket() {
   uint8_t GPS_lat_rel_top;
   uint8_t GPS_lat_rel_bot;
