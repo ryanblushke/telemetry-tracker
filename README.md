@@ -37,3 +37,6 @@ The receiver code must be compiled and uploaded to the board on the specified se
 cd telemeter/
 platformio run --target upload --environment receiver --upload-port /dev/cu.usbmodem12345
 ```
+# Contact
+Ryan Blushke
+ryan.blushke@gmail.com
